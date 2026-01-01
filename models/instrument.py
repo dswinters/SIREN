@@ -26,15 +26,6 @@ class InstrumentModel(QObject):
             self._tuning[string_idx] = note_val
             self.updated.emit()
 
-    def append_string(self):
-        self._tuning.append((self._tuning[-1] + 5) % 12)
+    def set_tuning(self, tuning):
+        self._tuning = list(tuning)
         self.updated.emit()
-
-    def prepend_string(self):
-        self._tuning.insert(0, (self._tuning[0] - 5) % 12)
-        self.updated.emit()
-
-    def remove_string(self):
-        if len(self._tuning) > 1:
-            self._tuning.pop()
-            self.updated.emit()

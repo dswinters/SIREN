@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                                QPushButton, QComboBox)
 from models import InstrumentModel, ScaleModel
+from controls import TuningDropdown
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
 from .common import CYCLIC_MAPS
@@ -28,15 +29,9 @@ class MainWindow(QMainWindow):
         self.btn_right.clicked.connect(lambda: self.scale_model.rotate_view(1))
         self.btn_left.clicked.connect(lambda: self.scale_model.rotate_view(-1))
 
-        self.btn_append = QPushButton("Add String (High)")
-        self.btn_prepend = QPushButton("Add String (Low)")
-        self.btn_remove = QPushButton("Remove String")
         self.btn_clear = QPushButton("Deactivate All Notes")
         self.btn_reset = QPushButton("Activate All Notes")
         
-        self.btn_append.clicked.connect(self.instrument_model.append_string)
-        self.btn_prepend.clicked.connect(self.instrument_model.prepend_string)
-        self.btn_remove.clicked.connect(self.instrument_model.remove_string)
         self.btn_clear.clicked.connect(self.scale_model.deactivate_all_notes)
         self.btn_reset.clicked.connect(self.scale_model.activate_all_notes)
 
@@ -44,10 +39,11 @@ class MainWindow(QMainWindow):
         self.combo_maps.addItems(CYCLIC_MAPS)
         self.combo_maps.currentTextChanged.connect(self.update_colormaps)
 
+        self.tuning_dropdown = TuningDropdown()
+        self.tuning_dropdown.currentTextChanged.connect(self.change_tuning)
+
         top_bar = QHBoxLayout()
-        top_bar.addWidget(self.btn_remove)
-        top_bar.addWidget(self.btn_prepend)
-        top_bar.addWidget(self.btn_append)
+        top_bar.addWidget(self.tuning_dropdown)
         top_bar.addStretch()
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_clear)
@@ -71,3 +67,8 @@ class MainWindow(QMainWindow):
     def update_colormaps(self, name):
         self.fret_view.set_colormap(name)
         self.scale_view.set_colormap(name)
+
+    def change_tuning(self, name):
+        tuning = self.tuning_dropdown.get_tuning(name)
+        if tuning:
+            self.instrument_model.set_tuning(tuning)
