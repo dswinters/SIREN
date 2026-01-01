@@ -6,9 +6,11 @@ from .base_view import BaseNoteView
 from .common import NOTE_NAMES, FONT_SIZE, INACTIVE_OPACITY, SINGLE_MARKERS, DOUBLE_MARKERS
 
 class FretboardView(BaseNoteView):
-    def __init__(self, model):
-        super().__init__(model)
-        self.model.updated.connect(self.update) # Standard update
+    def __init__(self, instrument_model, scale_model):
+        super().__init__(scale_model)
+        self.instrument_model = instrument_model
+        self.instrument_model.updated.connect(self.update)
+        self.scale_model.updated.connect(self.update)
         self.setStyleSheet("background-color: #121212;")
         self.setMinimumHeight(300)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -18,14 +20,14 @@ class FretboardView(BaseNoteView):
         margin_x = 60
         margin_top = 30
         margin_bottom = 50 
-        n = np.arange(self.model.num_frets + 1)
+        n = np.arange(self.instrument_model.num_frets + 1)
         scale_length = (w - 2 * margin_x) / 0.75
         fret_xs = (scale_length * (1 - 2**(-n/12))) + margin_x
         
-        if self.model.num_strings == 1:
+        if self.instrument_model.num_strings == 1:
             string_ys = np.array([h / 2])
         else:
-            string_ys = np.linspace(h - margin_bottom, margin_top, self.model.num_strings)
+            string_ys = np.linspace(h - margin_bottom, margin_top, self.instrument_model.num_strings)
         return fret_xs, string_ys, margin_x, margin_bottom
 
     def paintEvent(self, event):
@@ -49,7 +51,7 @@ class FretboardView(BaseNoteView):
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor("#FFFFFF"))
         marker_y = h - (margin_bottom / 2)
-        def get_cx(f): return (fret_xs[f-1]+fret_xs[f])/2 if f <= self.model.num_frets else None
+        def get_cx(f): return (fret_xs[f-1]+fret_xs[f])/2 if f <= self.instrument_model.num_frets else None
         
         for f in SINGLE_MARKERS:
             cx = get_cx(f)
@@ -61,7 +63,7 @@ class FretboardView(BaseNoteView):
                 painter.drawEllipse(QPointF(cx+6, marker_y), 3, 3)
 
         # Notes
-        grid = self.model.get_note_grid()
+        grid = self.instrument_model.get_note_grid()
         painter.setFont(QFont("Arial", FONT_SIZE, QFont.Bold))
         radius = 11
         
@@ -73,7 +75,7 @@ class FretboardView(BaseNoteView):
                 else: text_x = (fret_xs[f_idx - 1] + x) / 2
 
                 bg_color = self.get_color_for_note(note_val)
-                is_active = note_val in self.model.active_notes
+                is_active = note_val in self.scale_model.active_notes
                 
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(bg_color)
@@ -89,14 +91,14 @@ class FretboardView(BaseNoteView):
     def mousePressEvent(self, event):
         fret_xs, string_ys, _, _ = self.get_geometry()
         click_pos = event.position()
-        grid = self.model.get_note_grid()
+        grid = self.instrument_model.get_note_grid()
         
         for s_idx, y in enumerate(string_ys):
             for f_idx, x in enumerate(fret_xs):
                 cx = (x - 30) if f_idx == 0 else (fret_xs[f_idx - 1] + x) / 2
                 if np.sqrt((click_pos.x()-cx)**2 + (click_pos.y()-y)**2) < 15:
                     if event.button() == Qt.LeftButton:
-                        self.model.toggle_note_active(grid[s_idx, f_idx])
+                        self.scale_model.toggle_note_active(grid[s_idx, f_idx])
                     elif event.button() == Qt.RightButton and f_idx == 0:
                         self.show_tuning_menu(s_idx, event.globalPosition().toPoint())
                     return
@@ -106,6 +108,6 @@ class FretboardView(BaseNoteView):
         menu.setStyleSheet("QMenu { background-color: #333; color: white; }")
         for i, name in enumerate(NOTE_NAMES):
             action = QAction(name, self)
-            action.triggered.connect(lambda c, v=i: self.model.set_string_note(string_idx, v))
+            action.triggered.connect(lambda c, v=i: self.instrument_model.set_string_note(string_idx, v))
             menu.addAction(action)
         menu.exec(global_pos)

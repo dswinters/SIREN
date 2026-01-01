@@ -6,16 +6,16 @@ from .base_view import BaseNoteView
 from .common import NOTE_NAMES, INACTIVE_OPACITY
 
 class ScaleSelectorView(BaseNoteView):
-    def __init__(self, model):
-        super().__init__(model)
-        self.model.updated.connect(self.on_model_update)
+    def __init__(self, scale_model):
+        super().__init__(scale_model)
+        self.scale_model.updated.connect(self.on_model_update)
         
         self.setFixedHeight(60)
         self.setStyleSheet("background-color: #121212;")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
         # Animation State
-        self._anim_offset = float(self.model.rotation_offset)
+        self._anim_offset = float(self.scale_model.rotation_offset)
         
         self.anim = QPropertyAnimation(self, b"animOffset")
         self.anim.setDuration(300)
@@ -32,7 +32,7 @@ class ScaleSelectorView(BaseNoteView):
     animOffset = Property(float, get_anim_offset, set_anim_offset)
 
     def on_model_update(self):
-        target = self.model.rotation_offset
+        target = self.scale_model.rotation_offset
         current = self._anim_offset
         
         # Calculate shortest path for circular wrapping (0 <-> 11)
@@ -99,7 +99,7 @@ class ScaleSelectorView(BaseNoteView):
             
             # Pass the animated offset to get_color so colors shift smoothly too
             bg_color = self.get_color_for_note(note_val, offset_override=self._anim_offset)
-            is_active = note_val in self.model.active_notes
+            is_active = note_val in self.scale_model.active_notes
             
             painter.setPen(Qt.NoPen)
             painter.setBrush(bg_color)
@@ -135,4 +135,4 @@ class ScaleSelectorView(BaseNoteView):
                 
                 clicked_val = int(round(visual_pos + self._anim_offset - 0.5)) % 12
                 
-                self.model.toggle_note_active(clicked_val)
+                self.scale_model.toggle_note_active(clicked_val)

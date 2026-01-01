@@ -3,9 +3,9 @@ from PySide6.QtGui import QColor
 from .common import CYCLIC_MAPS, INACTIVE_OPACITY, get_cmap
 
 class BaseNoteView(QWidget):
-    def __init__(self, model):
+    def __init__(self, scale_model):
         super().__init__()
-        self.model = model
+        self.scale_model = scale_model
         # Base class does NOT connect update automatically to avoid double paints in animated views
         
         self.current_cmap_name = CYCLIC_MAPS[0] if CYCLIC_MAPS else None
@@ -24,11 +24,11 @@ class BaseNoteView(QWidget):
     def get_color_for_note(self, note_val, offset_override=None):
         if not self.cmap: return QColor("#333333")
         
-        is_active = note_val in self.model.active_notes
+        is_active = note_val in self.scale_model.active_notes
         if is_active:
             # Use override if provided (for smooth color transitions during animation)
             # otherwise use model state
-            offset = offset_override if offset_override is not None else self.model.rotation_offset
+            offset = offset_override if offset_override is not None else self.scale_model.rotation_offset
             
             relative_val = (note_val - offset) % 12
             norm_val = relative_val / 12.0

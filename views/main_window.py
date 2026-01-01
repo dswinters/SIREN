@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                                QPushButton, QComboBox)
-from models import InstrumentModel
+from models import InstrumentModel, ScaleModel
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
 from .common import CYCLIC_MAPS
@@ -11,9 +11,10 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Guitar Scales Explorer")
         self.resize(1200, 600)
 
-        self.model = InstrumentModel()
-        self.fret_view = FretboardView(self.model)
-        self.scale_view = ScaleSelectorView(self.model)
+        self.instrument_model = InstrumentModel()
+        self.scale_model = ScaleModel()
+        self.fret_view = FretboardView(self.instrument_model, self.scale_model)
+        self.scale_view = ScaleSelectorView(self.scale_model)
 
         self.btn_left = QPushButton("<")
         self.btn_right = QPushButton(">")
@@ -24,20 +25,20 @@ class MainWindow(QMainWindow):
         # Inverted direction for visual intuition: 
         # Right Arrow -> Content moves Left (Next items appear) -> Offset +1
         # Left Arrow -> Content moves Right (Prev items appear) -> Offset -1
-        self.btn_right.clicked.connect(lambda: self.model.rotate_view(1))
-        self.btn_left.clicked.connect(lambda: self.model.rotate_view(-1))
+        self.btn_right.clicked.connect(lambda: self.scale_model.rotate_view(1))
+        self.btn_left.clicked.connect(lambda: self.scale_model.rotate_view(-1))
 
         self.btn_append = QPushButton("Add String (High)")
         self.btn_prepend = QPushButton("Add String (Low)")
         self.btn_remove = QPushButton("Remove String")
-        self.btn_clear = QPushButton("Clear All Notes")
-        self.btn_reset = QPushButton("Reset Active")
+        self.btn_clear = QPushButton("Deactivate All Notes")
+        self.btn_reset = QPushButton("Activate All Notes")
         
-        self.btn_append.clicked.connect(self.model.append_string)
-        self.btn_prepend.clicked.connect(self.model.prepend_string)
-        self.btn_remove.clicked.connect(self.model.remove_string)
-        self.btn_clear.clicked.connect(self.model.deactivate_all_notes)
-        self.btn_reset.clicked.connect(self.model.activate_all_notes)
+        self.btn_append.clicked.connect(self.instrument_model.append_string)
+        self.btn_prepend.clicked.connect(self.instrument_model.prepend_string)
+        self.btn_remove.clicked.connect(self.instrument_model.remove_string)
+        self.btn_clear.clicked.connect(self.scale_model.deactivate_all_notes)
+        self.btn_reset.clicked.connect(self.scale_model.activate_all_notes)
 
         self.combo_maps = QComboBox()
         self.combo_maps.addItems(CYCLIC_MAPS)
