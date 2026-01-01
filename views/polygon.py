@@ -1,6 +1,6 @@
 import math
 from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF
+from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF, QConicalGradient, QPainterPath
 from PySide6.QtCore import Qt, QPointF, QRectF, QPropertyAnimation, Property, QEasingCurve
 from .base_view import BaseNoteView
 from .common import NOTE_NAMES, INACTIVE_OPACITY
@@ -55,6 +55,45 @@ class PolygonView(BaseNoteView):
         
         painter.setFont(QFont("Arial", 10, QFont.Bold))
         
+        # Draw Annulus
+        if self.cmap:
+            annulus_width = 40
+            half_width = annulus_width / 2
+            r_in = radius - half_width
+            r_out = radius + half_width
+            
+            path = QPainterPath()
+            path.addEllipse(QPointF(cx, cy), r_out, r_out)
+            path.addEllipse(QPointF(cx, cy), r_in, r_in)
+            path.setFillRule(Qt.OddEvenFill)
+            
+            gradient = QConicalGradient(QPointF(cx, cy), 90)
+            
+            steps = 360
+            
+            for i in range(steps + 1):
+                s = i / steps
+                t = (1.0 - s) % 1.0
+                
+                angle_deg = t * 360.0
+                
+                note_pos = self._anim_offset + (angle_deg / 30.0)
+                idx_low = int(math.floor(note_pos)) % 12
+                idx_high = (idx_low + 1) % 12
+                ratio = note_pos - math.floor(note_pos)
+                
+                active_low = 1.0 if idx_low in self.scale_model.active_notes else 0.0
+                active_high = 1.0 if idx_high in self.scale_model.active_notes else 0.0
+                opacity = ((1.0 - ratio) * active_low + ratio * active_high) ** 2.0
+                
+                rgba = self.cmap(t)
+                c = QColor.fromRgbF(rgba[0], rgba[1], rgba[2], (rgba[3] if len(rgba) > 3 else 1.0) * opacity)
+                gradient.setColorAt(s, c)
+                
+            painter.setBrush(gradient)
+            painter.setPen(Qt.NoPen)
+            painter.drawPath(path)
+
         # Calculate positions
         offset = self._anim_offset
         note_positions = {}
