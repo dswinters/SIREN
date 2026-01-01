@@ -116,7 +116,7 @@ class PolygonView(BaseNoteView):
 
         # Draw polygon connecting active notes
         if len(active_points) > 1:
-            painter.setPen(QPen(QColor(255, 255, 255, 100), 2))
+            painter.setPen(QPen(QColor("white"), 4))
             painter.setBrush(QColor(255, 255, 255, 30))
             painter.drawPolygon(QPolygonF(active_points))
             

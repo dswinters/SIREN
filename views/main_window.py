@@ -10,7 +10,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Guitar Scales Explorer")
-        self.resize(1200, 600)
+        self.resize(2400, 400)
 
         self.instrument_model = InstrumentModel()
         self.scale_model = ScaleModel()
