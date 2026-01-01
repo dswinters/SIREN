@@ -162,3 +162,10 @@ class PolygonView(BaseNoteView):
                 elif event.button() == Qt.RightButton:
                     self.scale_model.set_rotation_offset(i)
                 return
+
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        if delta > 0:
+            self.scale_model.rotate_view(-1)
+        elif delta < 0:
+            self.scale_model.rotate_view(1)
