@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                                QPushButton, QComboBox)
 from models import InstrumentModel, ScaleModel
-from controls import TuningDropdown
+from controls import PresetSelector, OffsetController
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
 from .common import CYCLIC_MAPS
@@ -39,11 +39,14 @@ class MainWindow(QMainWindow):
         self.combo_maps.addItems(CYCLIC_MAPS)
         self.combo_maps.currentTextChanged.connect(self.update_colormaps)
 
-        self.tuning_dropdown = TuningDropdown()
-        self.tuning_dropdown.currentTextChanged.connect(self.change_tuning)
+        self.preset_selector = PresetSelector()
+        self.preset_selector.currentTextChanged.connect(self.change_tuning)
+
+        self.offset_controller = OffsetController(self.instrument_model)
 
         top_bar = QHBoxLayout()
-        top_bar.addWidget(self.tuning_dropdown)
+        top_bar.addWidget(self.preset_selector)
+        top_bar.addWidget(self.offset_controller)
         top_bar.addStretch()
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_clear)
@@ -69,6 +72,6 @@ class MainWindow(QMainWindow):
         self.scale_view.set_colormap(name)
 
     def change_tuning(self, name):
-        tuning = self.tuning_dropdown.get_tuning(name)
+        tuning = self.preset_selector.get_tuning(name)
         if tuning:
             self.instrument_model.set_tuning(tuning)
