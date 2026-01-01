@@ -1,10 +1,9 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                               QPushButton, QComboBox)
+                               QPushButton)
 from models import InstrumentModel, ScaleModel
-from controls import PresetSelector, OffsetController
+from controls import PresetSelector, OffsetController, ColormapDropdown
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
-from .common import CYCLIC_MAPS
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -35,9 +34,8 @@ class MainWindow(QMainWindow):
         self.btn_clear.clicked.connect(self.scale_model.deactivate_all_notes)
         self.btn_reset.clicked.connect(self.scale_model.activate_all_notes)
 
-        self.combo_maps = QComboBox()
-        self.combo_maps.addItems(CYCLIC_MAPS)
-        self.combo_maps.currentTextChanged.connect(self.update_colormaps)
+        self.colormap_selector = ColormapDropdown()
+        self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
 
         self.preset_selector = PresetSelector()
         self.preset_selector.currentTextChanged.connect(self.change_tuning)
@@ -50,7 +48,7 @@ class MainWindow(QMainWindow):
         top_bar.addStretch()
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_clear)
-        top_bar.addWidget(self.combo_maps)
+        top_bar.addWidget(self.colormap_selector)
         
         scale_layout = QHBoxLayout()
         scale_layout.setContentsMargins(0, 10, 0, 0)
@@ -66,6 +64,10 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def on_colormap_changed(self, index):
+        name = self.colormap_selector.itemData(index)
+        self.update_colormaps(name)
 
     def update_colormaps(self, name):
         self.fret_view.set_colormap(name)
