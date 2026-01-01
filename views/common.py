@@ -9,7 +9,7 @@ except ImportError:
     sys.exit(1)
 
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-FONT_SIZE = 10
+FONT_SIZE = 11
 INACTIVE_OPACITY = 0.15
 SINGLE_MARKERS = [3, 5, 7, 9, 15, 17, 19, 21]
 DOUBLE_MARKERS = [12, 24]

@@ -77,7 +77,10 @@ class FretboardView(BaseNoteView):
                 bg_color = self.get_color_for_note(note_val)
                 is_active = note_val in self.scale_model.active_notes
                 
-                painter.setPen(Qt.NoPen)
+                if is_active:
+                    painter.setPen(QPen(QColor("#929292"), 2))
+                else:
+                    painter.setPen(Qt.NoPen)
                 painter.setBrush(bg_color)
                 painter.drawEllipse(QPointF(text_x, y), radius, radius)
                 

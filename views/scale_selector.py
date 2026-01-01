@@ -1,6 +1,6 @@
 import numpy as np
 from PySide6.QtWidgets import QSizePolicy
-from PySide6.QtGui import QPainter, QFont, QColor
+from PySide6.QtGui import QPainter, QFont, QColor, QPen
 from PySide6.QtCore import Qt, QPropertyAnimation, Property, QEasingCurve, QPointF, QRectF
 from .base_view import BaseNoteView
 from .common import NOTE_NAMES, INACTIVE_OPACITY
@@ -101,7 +101,10 @@ class ScaleSelectorView(BaseNoteView):
             bg_color = self.get_color_for_note(note_val, offset_override=self._anim_offset)
             is_active = note_val in self.scale_model.active_notes
             
-            painter.setPen(Qt.NoPen)
+            if is_active:
+                painter.setPen(QPen(QColor("#929292"), 4))
+            else:
+                painter.setPen(Qt.NoPen)
             painter.setBrush(bg_color)
             painter.drawEllipse(QPointF(cx, cy), radius, radius)
             
