@@ -105,19 +105,21 @@ class PolygonView(BaseNoteView):
             painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[i])
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            click_pos = event.position()
-            w, h = self.width(), self.height()
-            cx, cy = w / 2, h / 2
-            radius = min(w, h) / 2 - 40
-            offset = self._anim_offset
+        click_pos = event.position()
+        w, h = self.width(), self.height()
+        cx, cy = w / 2, h / 2
+        radius = min(w, h) / 2 - 40
+        offset = self._anim_offset
+        
+        for i in range(12):
+            angle_deg = -90 + (i - offset) * 30
+            angle_rad = math.radians(angle_deg)
+            nx = cx + radius * math.cos(angle_rad)
+            ny = cy + radius * math.sin(angle_rad)
             
-            for i in range(12):
-                angle_deg = -90 + (i - offset) * 30
-                angle_rad = math.radians(angle_deg)
-                nx = cx + radius * math.cos(angle_rad)
-                ny = cy + radius * math.sin(angle_rad)
-                
-                if math.hypot(click_pos.x() - nx, click_pos.y() - ny) < 20:
+            if math.hypot(click_pos.x() - nx, click_pos.y() - ny) < 20:
+                if event.button() == Qt.LeftButton:
                     self.scale_model.toggle_note_active(i)
-                    return
+                elif event.button() == Qt.RightButton:
+                    self.scale_model.set_rotation_offset(i)
+                return

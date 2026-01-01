@@ -117,25 +117,27 @@ class ScaleSelectorView(BaseNoteView):
             painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[note_val])
 
     def mousePressEvent(self, event):
-            if event.button() == Qt.LeftButton:
-                w = self.width()
-                margin = 5
-                available_w = w - (2 * margin)
-                
-                # Guard against zero-width (though unlikely in this layout)
-                if available_w <= 0: return
+        w = self.width()
+        margin = 5
+        available_w = w - (2 * margin)
+        
+        # Guard against zero-width (though unlikely in this layout)
+        if available_w <= 0: return
 
-                cell_w = available_w / 12
-                x = event.position().x()
-                
-                # Calculate the visual index (0.0 to 12.0)
-                visual_pos = (x - margin) / cell_w
-                
-                # The note 'k' is drawn at center: k - offset + 0.5
-                # We want to find the k that minimizes distance to visual_pos.
-                # equation: visual_pos = k - offset + 0.5
-                # therefore: k = visual_pos + offset - 0.5
-                
-                clicked_val = int(round(visual_pos + self._anim_offset - 0.5)) % 12
-                
-                self.scale_model.toggle_note_active(clicked_val)
+        cell_w = available_w / 12
+        x = event.position().x()
+        
+        # Calculate the visual index (0.0 to 12.0)
+        visual_pos = (x - margin) / cell_w
+        
+        # The note 'k' is drawn at center: k - offset + 0.5
+        # We want to find the k that minimizes distance to visual_pos.
+        # equation: visual_pos = k - offset + 0.5
+        # therefore: k = visual_pos + offset - 0.5
+        
+        clicked_val = int(round(visual_pos + self._anim_offset - 0.5)) % 12
+        
+        if event.button() == Qt.LeftButton:
+            self.scale_model.toggle_note_active(clicked_val)
+        elif event.button() == Qt.RightButton:
+            self.scale_model.set_rotation_offset(clicked_val)

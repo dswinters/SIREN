@@ -37,3 +37,7 @@ class ScaleModel(QObject):
                 self._rotation_offset = candidate
                 self.updated.emit()
                 break
+
+    def set_rotation_offset(self, offset):
+        self._rotation_offset = offset % 12
+        self.updated.emit()
