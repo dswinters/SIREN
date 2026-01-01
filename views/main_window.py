@@ -4,6 +4,7 @@ from models import InstrumentModel, ScaleModel
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
+from .polygon import PolygonView
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -31,6 +32,9 @@ class MainWindow(QMainWindow):
         self.btn_clear = QPushButton("Deactivate All Notes")
         self.btn_reset = QPushButton("Activate All Notes")
         
+        self.btn_polygon = QPushButton("Polygon View")
+        self.btn_polygon.clicked.connect(self.open_polygon_view)
+        
         self.btn_clear.clicked.connect(self.scale_model.deactivate_all_notes)
         self.btn_reset.clicked.connect(self.scale_model.activate_all_notes)
 
@@ -45,6 +49,7 @@ class MainWindow(QMainWindow):
         top_bar = QHBoxLayout()
         top_bar.addWidget(self.preset_selector)
         top_bar.addWidget(self.offset_controller)
+        top_bar.addWidget(self.btn_polygon)
         top_bar.addStretch()
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_clear)
@@ -65,6 +70,15 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
+    def open_polygon_view(self):
+        if not hasattr(self, 'polygon_window') or not self.polygon_window.isVisible():
+            self.polygon_window = PolygonView(self.scale_model)
+            self.polygon_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
+            self.polygon_window.show()
+        else:
+            self.polygon_window.raise_()
+            self.polygon_window.activateWindow()
+
     def on_colormap_changed(self, index):
         name = self.colormap_selector.itemData(index)
         self.update_colormaps(name)
@@ -72,6 +86,8 @@ class MainWindow(QMainWindow):
     def update_colormaps(self, name):
         self.fret_view.set_colormap(name)
         self.scale_view.set_colormap(name)
+        if hasattr(self, 'polygon_window') and self.polygon_window:
+            self.polygon_window.set_colormap(name)
 
     def change_tuning(self, name):
         tuning = self.preset_selector.get_tuning(name)
