@@ -92,9 +92,9 @@ class MainWindow(QMainWindow):
         self.txt_bpm.setPlaceholderText("BPM")
         self.txt_bpm.textChanged.connect(self.sound_engine.set_bpm)
         
-        self.cmb_waveform = QComboBox()
-        self.cmb_waveform.addItems(self.sound_engine.get_available_waveforms())
-        self.cmb_waveform.currentTextChanged.connect(self.sound_engine.set_waveform)
+        self.cmb_instrument = QComboBox()
+        self.cmb_instrument.addItems(self.sound_engine.get_available_instruments())
+        self.cmb_instrument.currentTextChanged.connect(self.sound_engine.set_instrument)
 
         self.preset_selector = PresetSelector()
         self.preset_selector.currentTextChanged.connect(self.change_tuning)
@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
         ctrl_layout.addWidget(self.btn_play)
         ctrl_layout.addWidget(self.chk_loop)
         ctrl_layout.addWidget(self.txt_bpm)
-        ctrl_layout.addWidget(self.cmb_waveform)
+        ctrl_layout.addWidget(self.cmb_instrument)
         
         scale_layout.addWidget(ctrl_container)
         scale_layout.addWidget(self.scale_view)
