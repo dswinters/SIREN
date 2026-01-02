@@ -1,11 +1,12 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel)
+                               QPushButton, QLabel, QComboBox, QStackedWidget)
 from PySide6.QtCore import Qt
 from models import InstrumentModel, ScaleModel
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from controls.scale_dropdown import ScaleSelectDropdown
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
+from .piano import PianoView
 from .polygon import PolygonView
 
 class MainWindow(QMainWindow):
@@ -17,6 +18,7 @@ class MainWindow(QMainWindow):
         self.instrument_model = InstrumentModel()
         self.scale_model = ScaleModel()
         self.fret_view = FretboardView(self.instrument_model, self.scale_model)
+        self.piano_view = PianoView(self.scale_model)
         self.scale_view = ScaleSelectorView(self.scale_model)
 
         self.btn_left = QPushButton("<")
@@ -47,6 +49,10 @@ class MainWindow(QMainWindow):
         self.btn_polygon = QPushButton("Polygon View")
         self.btn_polygon.clicked.connect(self.open_polygon_view)
         
+        self.view_selector = QComboBox()
+        self.view_selector.addItems(["Fretboard", "Piano"])
+        self.view_selector.currentIndexChanged.connect(self.switch_view)
+        
         self.btn_clear.clicked.connect(self.scale_model.deactivate_all_notes)
         self.btn_reset.clicked.connect(self.scale_model.activate_all_notes)
 
@@ -72,10 +78,15 @@ class MainWindow(QMainWindow):
         top_bar.addWidget(self.preset_selector)
         top_bar.addWidget(self.offset_controller)
         top_bar.addWidget(self.btn_polygon)
+        top_bar.addWidget(self.view_selector)
         top_bar.addStretch()
         top_bar.addWidget(self.btn_reset)
         top_bar.addWidget(self.btn_clear)
         top_bar.addWidget(self.colormap_selector)
+        
+        self.central_stack = QStackedWidget()
+        self.central_stack.addWidget(self.fret_view)
+        self.central_stack.addWidget(self.piano_view)
         
         scale_layout = QHBoxLayout()
         scale_layout.setContentsMargins(0, 10, 0, 0)
@@ -99,12 +110,15 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout()
         layout.addLayout(top_bar)
-        layout.addWidget(self.fret_view)
+        layout.addWidget(self.central_stack)
         layout.addLayout(scale_layout)
 
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def switch_view(self, index):
+        self.central_stack.setCurrentIndex(index)
 
     def rotate_modes(self, direction):
         if self.scale_view.is_animating():
@@ -129,6 +143,7 @@ class MainWindow(QMainWindow):
     def update_colormaps(self, name):
         self.fret_view.set_colormap(name)
         self.scale_view.set_colormap(name)
+        self.piano_view.set_colormap(name)
         if hasattr(self, 'polygon_window') and self.polygon_window:
             self.polygon_window.set_colormap(name)
 
