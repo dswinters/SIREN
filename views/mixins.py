@@ -6,7 +6,7 @@ class RotationAnimationMixin:
     Expects the class to inherit from QObject/QWidget and have a 'scale_model' attribute.
     """
     def init_animation(self):
-        self._anim_offset = float(self.scale_model.rotation_offset)
+        self._anim_offset = float(self.scale_model.root_note)
         self.anim = QPropertyAnimation(self, b"animOffset")
         self.anim.setDuration(300)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
@@ -25,7 +25,7 @@ class RotationAnimationMixin:
     animOffset = Property(float, get_anim_offset, set_anim_offset)
 
     def on_model_update(self):
-        target = self.scale_model.rotation_offset
+        target = self.scale_model.root_note
         current = self._anim_offset
         
         diff = target - current

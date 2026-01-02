@@ -75,7 +75,7 @@ class FretboardView(BaseNoteView):
                 else: text_x = (fret_xs[f_idx - 1] + x) / 2
 
                 bg_color = self.get_color_for_note(note_val)
-                is_active = note_val in self.scale_model.active_notes
+                is_active = (self.scale_model.active_notes >> note_val) & 1
                 
                 if is_active:
                     painter.setPen(QPen(QColor("#929292"), 2))

@@ -24,11 +24,11 @@ class BaseNoteView(QWidget):
     def get_color_for_note(self, note_val, offset_override=None):
         if not self.cmap: return QColor("#333333")
         
-        is_active = note_val in self.scale_model.active_notes
+        is_active = (self.scale_model.active_notes >> note_val) & 1
         if is_active:
             # Use override if provided (for smooth color transitions during animation)
             # otherwise use model state
-            offset = offset_override if offset_override is not None else self.scale_model.rotation_offset
+            offset = offset_override if offset_override is not None else self.scale_model.root_note
             
             relative_val = (note_val - offset) % 12
             norm_val = relative_val / 12.0

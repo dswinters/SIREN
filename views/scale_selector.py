@@ -59,7 +59,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
             
             # Pass the animated offset to get_color so colors shift smoothly too
             bg_color = self.get_color_for_note(note_val, offset_override=self._anim_offset)
-            is_active = note_val in self.scale_model.active_notes
+            is_active = (self.scale_model.active_notes >> note_val) & 1
             
             if is_active:
                 painter.setPen(QPen(QColor("#929292"), 4))
@@ -101,7 +101,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
             self.scale_model.toggle_note_active(clicked_val)
         elif event.button() == Qt.RightButton:
             if not self.is_animating():
-                self.scale_model.set_rotation_offset(clicked_val)
+                self.scale_model.set_root_note(clicked_val)
 
     def wheelEvent(self, event):
         if self.is_animating():

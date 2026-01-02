@@ -12,23 +12,23 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
         self.setWindowTitle("Polygon View")
         self.resize(400, 400)
         self.setStyleSheet("background-color: #121212;")
-        self._last_mask = self.scale_model.mask
+        self._last_value = self.scale_model.value
         self._static_polygon = False
 
         # Initialize animation from Mixin
         self.init_animation()
 
     def on_model_update(self):
-        new_mask = self.scale_model.mask
-        target = self.scale_model.rotation_offset
+        new_value = self.scale_model.value
+        target = self.scale_model.root_note
         
-        # If mask is unchanged but offset changed, it's a transpose -> static polygon
-        if new_mask == self._last_mask and target != self._anim_offset:
+        # If value is unchanged but offset changed, it's a transpose -> static polygon
+        if new_value == self._last_value and target != self._anim_offset:
             self._static_polygon = True
         else:
             self._static_polygon = False
             
-        self._last_mask = new_mask
+        self._last_value = new_value
         RotationAnimationMixin.on_model_update(self)
 
     def paintEvent(self, event):
@@ -68,8 +68,8 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
                 idx_high = (idx_low + 1) % 12
                 ratio = note_pos - math.floor(note_pos)
                 
-                active_low = 1.0 if idx_low in self.scale_model.active_notes else 0.0
-                active_high = 1.0 if idx_high in self.scale_model.active_notes else 0.0
+                active_low = 1.0 if (self.scale_model.active_notes >> idx_low) & 1 else 0.0
+                active_high = 1.0 if (self.scale_model.active_notes >> idx_high) & 1 else 0.0
                 opacity = ((1.0 - ratio) * active_low + ratio * active_high) ** 2.0
                 
                 rgba = self.cmap(t)
@@ -98,11 +98,11 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
             
         # Calculate polygon points
         # Use target offset for static polygon (Transpose), anim offset otherwise (Rotate)
-        poly_offset = self.scale_model.rotation_offset if self._static_polygon else self._anim_offset
+        poly_offset = self.scale_model.root_note if self._static_polygon else self._anim_offset
         active_points = []
         
         for i in range(12):
-            if i in self.scale_model.active_notes:
+            if (self.scale_model.active_notes >> i) & 1:
                 angle_deg = -90 + (i - poly_offset) * 30
                 angle_rad = math.radians(angle_deg)
                 px = cx + radius * math.cos(angle_rad)
@@ -119,7 +119,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
         note_radius = 15
         for i in range(12):
             pos = note_positions[i]
-            is_active = i in self.scale_model.active_notes
+            is_active = (self.scale_model.active_notes >> i) & 1
             bg_color = self.get_color_for_note(i, offset_override=offset)
             
             if is_active:
@@ -156,7 +156,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
                     self.scale_model.toggle_note_active(i)
                 elif event.button() == Qt.RightButton:
                     if not self.is_animating():
-                        self.scale_model.set_rotation_offset(i)
+                        self.scale_model.set_root_note(i)
                 return
 
     def wheelEvent(self, event):

@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Guitar Scales Explorer")
-        self.resize(1400, 800)
+        self.resize(1600, 400)
 
         self.instrument_model = InstrumentModel()
         self.scale_model = ScaleModel()
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
             self.sound_engine.stop()
             self.btn_play.setText("Play")
         else:
-            self.sound_engine.update_scale(self.scale_model.rotation_offset, self.scale_model.mask)
+            self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
             self.sound_engine.play()
             self.btn_play.setText("Stop")
 
@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
         self.btn_play.setText("Play")
 
     def on_scale_updated(self):
-        self.sound_engine.update_scale(self.scale_model.rotation_offset, self.scale_model.mask)
+        self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
 
     def rotate_modes(self, direction):
         if self.scale_view.is_animating():

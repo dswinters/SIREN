@@ -27,9 +27,11 @@ class ScaleSelectDropdown(QComboBox):
         
         name = self.currentText()
         if name in self.scales:
-            # Convert 1/0 list to boolean list
-            mask = [bool(x) for x in self.scales[name]]
-            self.scale_model.set_mask(mask)
+            # Convert 1/0 list to integer
+            val = 0
+            for i, active in enumerate(self.scales[name]):
+                if active: val |= (1 << i)
+            self.scale_model.set_value(val)
             
         self.blockSignals(True)
         self.setCurrentIndex(0)
