@@ -1,52 +1,20 @@
 import math
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF, QConicalGradient, QPainterPath
-from PySide6.QtCore import Qt, QPointF, QRectF, QPropertyAnimation, Property, QEasingCurve
+from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
+from .mixins import RotationAnimationMixin
 from .common import NOTE_NAMES, INACTIVE_OPACITY
 
-class PolygonView(BaseNoteView):
+class PolygonView(BaseNoteView, RotationAnimationMixin):
     def __init__(self, scale_model):
         super().__init__(scale_model)
-        self.scale_model.updated.connect(self.on_model_update)
         self.setWindowTitle("Polygon View")
         self.resize(400, 400)
         self.setStyleSheet("background-color: #121212;")
 
-        # Animation State
-        self._anim_offset = float(self.scale_model.rotation_offset)
-        
-        self.anim = QPropertyAnimation(self, b"animOffset")
-        self.anim.setDuration(300)
-        self.anim.setEasingCurve(QEasingCurve.OutCubic)
-
-    def is_animating(self):
-        return self.anim.state() == QPropertyAnimation.State.Running
-
-    def get_anim_offset(self):
-        return self._anim_offset
-
-    def set_anim_offset(self, val):
-        self._anim_offset = val
-        self.update()
-
-    animOffset = Property(float, get_anim_offset, set_anim_offset)
-
-    def on_model_update(self):
-        target = self.scale_model.rotation_offset
-        current = self._anim_offset
-        
-        diff = target - current
-        
-        if diff > 6:
-            self._anim_offset += 12
-        elif diff < -6:
-            self._anim_offset -= 12
-            
-        self.anim.setStartValue(self._anim_offset)
-        self.anim.setEndValue(target)
-        self.anim.start()
-        self.update()
+        # Initialize animation from Mixin
+        self.init_animation()
 
     def paintEvent(self, event):
         painter = QPainter(self)

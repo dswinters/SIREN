@@ -1,64 +1,21 @@
 import numpy as np
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtGui import QPainter, QFont, QColor, QPen
-from PySide6.QtCore import Qt, QPropertyAnimation, Property, QEasingCurve, QPointF, QRectF
+from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
+from .mixins import RotationAnimationMixin
 from .common import NOTE_NAMES, INACTIVE_OPACITY
 
-class ScaleSelectorView(BaseNoteView):
+class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
     def __init__(self, scale_model):
         super().__init__(scale_model)
-        self.scale_model.updated.connect(self.on_model_update)
         
         self.setFixedHeight(60)
         self.setStyleSheet("background-color: #121212;")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-        # Animation State
-        self._anim_offset = float(self.scale_model.rotation_offset)
-        
-        self.anim = QPropertyAnimation(self, b"animOffset")
-        self.anim.setDuration(300)
-        self.anim.setEasingCurve(QEasingCurve.OutCubic)
-
-    def is_animating(self):
-        return self.anim.state() == QPropertyAnimation.State.Running
-
-    # Define the property for the animation framework
-    def get_anim_offset(self):
-        return self._anim_offset
-
-    def set_anim_offset(self, val):
-        self._anim_offset = val
-        self.update() # Trigger repaint on every frame
-
-    animOffset = Property(float, get_anim_offset, set_anim_offset)
-
-    def on_model_update(self):
-        target = self.scale_model.rotation_offset
-        current = self._anim_offset
-        
-        # Calculate shortest path for circular wrapping (0 <-> 11)
-        diff = (target - current)
-        
-        # If diff is > 6, it means we went the "long way" around the circle
-        # e.g., jumping from 0 to 11 (diff = 11). We want -1.
-        # e.g., jumping from 11 to 0 (diff = -11). We want +1.
-        
-        # Normalize current to be close to target for animation purposes
-        # We temporarily set current to a value that makes the math work, 
-        # then animate to the integer target.
-        if diff > 6:
-            self._anim_offset += 12
-        elif diff < -6:
-            self._anim_offset -= 12
-            
-        self.anim.setStartValue(self._anim_offset)
-        self.anim.setEndValue(target)
-        self.anim.start()
-        
-        # Also repaint in case only active status changed (no motion)
-        self.update()
+        # Initialize animation from Mixin
+        self.init_animation()
 
     def paintEvent(self, event):
         painter = QPainter(self)
