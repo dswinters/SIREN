@@ -20,6 +20,9 @@ class PolygonView(BaseNoteView):
         self.anim.setDuration(300)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
 
+    def is_animating(self):
+        return self.anim.state() == QPropertyAnimation.State.Running
+
     def get_anim_offset(self):
         return self._anim_offset
 
@@ -160,10 +163,13 @@ class PolygonView(BaseNoteView):
                 if event.button() == Qt.LeftButton:
                     self.scale_model.toggle_note_active(i)
                 elif event.button() == Qt.RightButton:
-                    self.scale_model.set_rotation_offset(i)
+                    if not self.is_animating():
+                        self.scale_model.set_rotation_offset(i)
                 return
 
     def wheelEvent(self, event):
+        if self.is_animating():
+            return
         delta = event.angleDelta().y()
         if delta > 0:
             self.scale_model.rotate_view(-1)

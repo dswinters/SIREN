@@ -21,6 +21,9 @@ class ScaleSelectorView(BaseNoteView):
         self.anim.setDuration(300)
         self.anim.setEasingCurve(QEasingCurve.OutCubic)
 
+    def is_animating(self):
+        return self.anim.state() == QPropertyAnimation.State.Running
+
     # Define the property for the animation framework
     def get_anim_offset(self):
         return self._anim_offset
@@ -140,4 +143,5 @@ class ScaleSelectorView(BaseNoteView):
         if event.button() == Qt.LeftButton:
             self.scale_model.toggle_note_active(clicked_val)
         elif event.button() == Qt.RightButton:
-            self.scale_model.set_rotation_offset(clicked_val)
+            if not self.is_animating():
+                self.scale_model.set_rotation_offset(clicked_val)

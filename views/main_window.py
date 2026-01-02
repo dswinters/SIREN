@@ -26,8 +26,8 @@ class MainWindow(QMainWindow):
         # Inverted direction for visual intuition: 
         # Right Arrow -> Content moves Left (Next items appear) -> Offset +1
         # Left Arrow -> Content moves Right (Prev items appear) -> Offset -1
-        self.btn_right.clicked.connect(lambda: self.scale_model.rotate_view(1))
-        self.btn_left.clicked.connect(lambda: self.scale_model.rotate_view(-1))
+        self.btn_right.clicked.connect(lambda: self.rotate_view(1))
+        self.btn_left.clicked.connect(lambda: self.rotate_view(-1))
 
         self.btn_clear = QPushButton("Deactivate All Notes")
         self.btn_reset = QPushButton("Activate All Notes")
@@ -69,6 +69,13 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+    def rotate_view(self, direction):
+        if self.scale_view.is_animating():
+            return
+        if hasattr(self, 'polygon_window') and self.polygon_window.isVisible() and self.polygon_window.is_animating():
+            return
+        self.scale_model.rotate_view(direction)
 
     def open_polygon_view(self):
         if not hasattr(self, 'polygon_window') or not self.polygon_window.isVisible():
