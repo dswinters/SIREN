@@ -1,7 +1,10 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                               QPushButton, QLabel, QComboBox, QStackedWidget)
-from PySide6.QtCore import Qt
+                               QPushButton, QLabel, QComboBox, QStackedWidget,
+                               QCheckBox, QLineEdit)
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QIntValidator
 from models import InstrumentModel, ScaleModel
+from modules.sound import SoundEngine
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from controls.scale_dropdown import ScaleSelectDropdown
 from .fretboard import FretboardView
@@ -20,6 +23,10 @@ class MainWindow(QMainWindow):
         self.fret_view = FretboardView(self.instrument_model, self.scale_model)
         self.piano_view = PianoView(self.scale_model)
         self.scale_view = ScaleSelectorView(self.scale_model)
+        
+        self.sound_engine = SoundEngine()
+        self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
+        self.scale_model.updated.connect(self.on_scale_updated)
 
         self.btn_left = QPushButton("<")
         self.btn_right = QPushButton(">")
@@ -68,6 +75,26 @@ class MainWindow(QMainWindow):
         self.lbl_trans = QLabel("Transpose")
         self.lbl_trans.setAlignment(Qt.AlignCenter)
         self.lbl_trans.setStyleSheet("font-size: 10px; font-weight: bold; color: #888;")
+        
+        # Sound Controls
+        self.lbl_sound = QLabel("Sound")
+        self.lbl_sound.setAlignment(Qt.AlignCenter)
+        self.lbl_sound.setStyleSheet("font-size: 10px; font-weight: bold; color: #888;")
+        
+        self.btn_play = QPushButton("Play")
+        self.btn_play.clicked.connect(self.toggle_playback)
+        
+        self.chk_loop = QCheckBox("Loop")
+        self.chk_loop.toggled.connect(self.sound_engine.set_looping)
+        
+        self.txt_bpm = QLineEdit("120")
+        self.txt_bpm.setValidator(QIntValidator(1, 999))
+        self.txt_bpm.setPlaceholderText("BPM")
+        self.txt_bpm.textChanged.connect(self.sound_engine.set_bpm)
+        
+        self.cmb_waveform = QComboBox()
+        self.cmb_waveform.addItems(self.sound_engine.get_available_waveforms())
+        self.cmb_waveform.currentTextChanged.connect(self.sound_engine.set_waveform)
 
         self.preset_selector = PresetSelector()
         self.preset_selector.currentTextChanged.connect(self.change_tuning)
@@ -91,7 +118,10 @@ class MainWindow(QMainWindow):
         scale_layout = QHBoxLayout()
         scale_layout.setContentsMargins(0, 10, 0, 0)
         
-        ctrl_layout = QVBoxLayout()
+        ctrl_container = QWidget()
+        ctrl_container.setFixedWidth(180)
+        ctrl_layout = QVBoxLayout(ctrl_container)
+        ctrl_layout.setContentsMargins(0, 0, 0, 0)
         ctrl_layout.addWidget(self.lbl_mode)
         row1 = QHBoxLayout()
         row1.addWidget(self.btn_left)
@@ -105,7 +135,13 @@ class MainWindow(QMainWindow):
         ctrl_layout.addLayout(row2)
         ctrl_layout.addWidget(self.scale_dropdown)
         
-        scale_layout.addLayout(ctrl_layout)
+        ctrl_layout.addWidget(self.lbl_sound)
+        ctrl_layout.addWidget(self.btn_play)
+        ctrl_layout.addWidget(self.chk_loop)
+        ctrl_layout.addWidget(self.txt_bpm)
+        ctrl_layout.addWidget(self.cmb_waveform)
+        
+        scale_layout.addWidget(ctrl_container)
         scale_layout.addWidget(self.scale_view)
 
         layout = QVBoxLayout()
@@ -119,6 +155,22 @@ class MainWindow(QMainWindow):
 
     def switch_view(self, index):
         self.central_stack.setCurrentIndex(index)
+
+    def toggle_playback(self):
+        if self.sound_engine.is_playing:
+            self.sound_engine.stop()
+            self.btn_play.setText("Play")
+        else:
+            self.sound_engine.update_scale(self.scale_model.rotation_offset, self.scale_model.mask)
+            self.sound_engine.play()
+            self.btn_play.setText("Stop")
+
+    @Slot()
+    def on_playback_stopped(self):
+        self.btn_play.setText("Play")
+
+    def on_scale_updated(self):
+        self.sound_engine.update_scale(self.scale_model.rotation_offset, self.scale_model.mask)
 
     def rotate_modes(self, direction):
         if self.scale_view.is_animating():
@@ -151,3 +203,7 @@ class MainWindow(QMainWindow):
         tuning = self.preset_selector.get_tuning(name)
         if tuning:
             self.instrument_model.set_tuning(tuning)
+
+    def closeEvent(self, event):
+        self.sound_engine.stop()
+        super().closeEvent(event)
