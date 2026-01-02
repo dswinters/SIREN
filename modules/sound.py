@@ -23,6 +23,7 @@ class SoundEngine(QObject):
         self._sample_rate = 44100
         self._root_offset = 0
         self._mask = []
+        self._octave_shift = 0
 
     @property
     def is_playing(self):
@@ -45,6 +46,9 @@ class SoundEngine(QObject):
     def set_looping(self, enabled):
         self._looping = enabled
 
+    def change_octave(self, delta):
+        self._octave_shift += delta
+
     def update_scale(self, root_offset, mask):
         self._root_offset = root_offset
         self._mask = mask
@@ -64,59 +68,92 @@ class SoundEngine(QObject):
 
     def _karplus_strong(self, frequency, duration):
         sample_rate = self._sample_rate
-        N = int(sample_rate / frequency)
-        if N <= 0:
-            return np.zeros(int(sample_rate * duration), dtype=np.float32)
-        
         n_samples = int(sample_rate * duration)
         
-        # Initialize buffer based on instrument
+        # Inner function to generate a single string's audio
+        def generate_string(freq, decay, init_mode):
+            N = int(sample_rate / freq)
+            if N <= 0: return np.zeros(n_samples, dtype=np.float32)
+            
+            # Excitation
+            if init_mode == "sawtooth":
+                # Violin-like: rich harmonics
+                buf = np.linspace(-1, 1, N, dtype=np.float32)
+            elif init_mode == "smooth_noise":
+                # Piano-like: softer attack (low-pass filtered noise)
+                noise = np.random.uniform(-1, 1, N).astype(np.float32)
+                buf = np.zeros_like(noise)
+                if N > 1:
+                    buf[1:] = 0.5 * (noise[1:] + noise[:-1])
+                    buf[0] = noise[0]
+                else:
+                    buf = noise
+            else:
+                # Guitar-like: sharp attack (white noise)
+                buf = np.random.uniform(-1, 1, N).astype(np.float32)
+
+            output = np.zeros(n_samples, dtype=np.float32)
+            output[:N] = buf
+            
+            # KS Loop
+            prev_block = buf
+            cursor = N
+            last_val = 0.0 # Represents y[n-N-1] for the first sample of the block
+            
+            while cursor < n_samples:
+                # Create y[n-N-1] vector
+                delayed = np.empty_like(prev_block)
+                delayed[0] = last_val
+                delayed[1:] = prev_block[:-1]
+                
+                # Update last_val for the next block (it's the last value of the current prev_block)
+                last_val = prev_block[-1]
+                
+                # Average and decay
+                # y[n] = decay * 0.5 * (y[n-N] + y[n-N-1])
+                current_block = decay * 0.5 * (prev_block + delayed)
+                
+                # Write to output
+                take = min(len(current_block), n_samples - cursor)
+                output[cursor:cursor+take] = current_block[:take]
+                
+                prev_block = current_block
+                cursor += take
+                
+            return output
+
+        # Instrument Logic
         if self._instrument == "Guitar":
-            buf = np.random.uniform(-1, 1, N)
-            alpha = 0.996
+            # Standard KS
+            audio = generate_string(frequency, 0.996, "noise")
+            
         elif self._instrument == "Violin":
-            # Sawtooth-like init for brighter tone, high feedback for sustain
-            buf = np.linspace(-1, 1, N)
-            alpha = 0.999
+            # High sustain, sawtooth init, slow attack
+            audio = generate_string(frequency, 0.999, "sawtooth")
+            # Apply fade-in (attack)
+            attack_samples = int(0.1 * sample_rate)
+            if n_samples > attack_samples:
+                envelope = np.ones(n_samples, dtype=np.float32)
+                envelope[:attack_samples] = np.linspace(0, 1, attack_samples)
+                audio *= envelope
+                
         elif self._instrument == "Piano":
-            # White noise with slight smoothing
-            buf = np.random.uniform(-1, 1, N)
-            if N > 2:
-                buf = 0.5 * buf + 0.25 * np.roll(buf, 1) + 0.25 * np.roll(buf, -1)
-            alpha = 0.992
+            # Two strings, slightly detuned, smoother noise
+            s1 = generate_string(frequency, 0.995, "smooth_noise")
+            s2 = generate_string(frequency * 1.003, 0.995, "smooth_noise")
+            audio = 0.5 * (s1 + s2)
+            
         else:
-            buf = np.random.uniform(-1, 1, N)
-            alpha = 0.99
-        
-        output = np.zeros(n_samples, dtype=np.float32)
-        output[:N] = buf
-        
-        prev_block = buf
-        cursor = N
-        last_val = 0.0
-        
-        while cursor < n_samples:
-            shifted = np.empty_like(prev_block)
-            shifted[0] = last_val
-            shifted[1:] = prev_block[:-1]
-            
-            next_block = alpha * 0.5 * (prev_block + shifted)
-            last_val = prev_block[-1]
-            
-            take = min(len(next_block), n_samples - cursor)
-            output[cursor:cursor+take] = next_block[:take]
-            
-            prev_block = next_block
-            cursor += take
-            
-        # Simple release envelope
+            audio = generate_string(frequency, 0.99, "noise")
+
+        # Global Release Envelope (to prevent clicking at end of duration)
         release_len = int(0.05 * sample_rate)
         if n_samples > release_len:
             envelope = np.ones(n_samples, dtype=np.float32)
             envelope[-release_len:] = np.linspace(1, 0, release_len)
-            output *= envelope
+            audio *= envelope
             
-        return (output * 0.5).astype(np.float32)
+        return audio
 
     def _run_playback(self):
         while not self._stop_event.is_set():
@@ -141,7 +178,7 @@ class SoundEngine(QObject):
                 
                 if HAS_AUDIO:
                     try:
-                        freq = 440.0 * (2 ** ((note - 69) / 12.0))
+                        freq = 440.0 * (2 ** ((note + (self._octave_shift * 12) - 69) / 12.0))
                         audio_data = self._karplus_strong(freq, duration)
                         sd.play(audio_data, self._sample_rate, blocking=True)
                     except Exception as e:

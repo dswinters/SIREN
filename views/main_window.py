@@ -86,6 +86,14 @@ class MainWindow(QMainWindow):
         
         self.chk_loop = QCheckBox("Loop")
         self.chk_loop.toggled.connect(self.sound_engine.set_looping)
+
+        self.btn_oct_down = QPushButton("Oct -")
+        self.btn_oct_up = QPushButton("Oct +")
+        for b in [self.btn_oct_down, self.btn_oct_up]:
+            b.setFixedWidth(40)
+            b.setStyleSheet("font-size: 10px; font-weight: bold;")
+        self.btn_oct_down.clicked.connect(lambda: self.sound_engine.change_octave(-1))
+        self.btn_oct_up.clicked.connect(lambda: self.sound_engine.change_octave(1))
         
         self.txt_bpm = QLineEdit("120")
         self.txt_bpm.setValidator(QIntValidator(1, 999))
@@ -138,6 +146,10 @@ class MainWindow(QMainWindow):
         ctrl_layout.addWidget(self.lbl_sound)
         ctrl_layout.addWidget(self.btn_play)
         ctrl_layout.addWidget(self.chk_loop)
+        row_oct = QHBoxLayout()
+        row_oct.addWidget(self.btn_oct_down)
+        row_oct.addWidget(self.btn_oct_up)
+        ctrl_layout.addLayout(row_oct)
         ctrl_layout.addWidget(self.txt_bpm)
         ctrl_layout.addWidget(self.cmb_instrument)
         
