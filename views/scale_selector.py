@@ -4,7 +4,7 @@ from PySide6.QtGui import QPainter, QFont, QColor, QPen
 from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import RotationAnimationMixin
-from .common import NOTE_NAMES, INACTIVE_OPACITY
+from .common import INACTIVE_OPACITY
 
 class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
     def __init__(self, scale_model):
@@ -74,7 +74,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
                 
             painter.setPen(text_color)
             rect = QRectF(cx - radius, cy - radius, radius*2, radius*2)
-            painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[note_val])
+            painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
 
     def mousePressEvent(self, event):
         w = self.width()
@@ -101,7 +101,10 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
             self.scale_model.toggle_note_active(clicked_val)
         elif event.button() == Qt.RightButton:
             if not self.is_animating():
-                self.scale_model.set_root_note(clicked_val)
+                if clicked_val == self.scale_model.root_note:
+                    self.scale_model.toggle_naming_convention()
+                else:
+                    self.scale_model.set_root_note(clicked_val)
 
     def wheelEvent(self, event):
         if self.is_animating():

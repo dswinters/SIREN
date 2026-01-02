@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QSizePolicy, QMenu
 from PySide6.QtGui import QPainter, QPen, QColor, QFont, QAction
 from PySide6.QtCore import Qt, QLineF, QPointF, QRectF
 from .base_view import BaseNoteView
-from .common import NOTE_NAMES, FONT_SIZE, INACTIVE_OPACITY, SINGLE_MARKERS, DOUBLE_MARKERS
+from .common import FONT_SIZE, INACTIVE_OPACITY, SINGLE_MARKERS, DOUBLE_MARKERS
 
 class FretboardView(BaseNoteView):
     def __init__(self, instrument_model, scale_model):
@@ -89,7 +89,7 @@ class FretboardView(BaseNoteView):
                 
                 painter.setPen(text_color)
                 rect = QRectF(text_x - radius, y - radius, radius*2, radius*2)
-                painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[note_val])
+                painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
 
     def mousePressEvent(self, event):
         fret_xs, string_ys, _, _ = self.get_geometry()
@@ -109,7 +109,7 @@ class FretboardView(BaseNoteView):
     def show_tuning_menu(self, string_idx, global_pos):
         menu = QMenu(self)
         menu.setStyleSheet("QMenu { background-color: #333; color: white; }")
-        for i, name in enumerate(NOTE_NAMES):
+        for i, name in enumerate(self.scale_model.note_names):
             action = QAction(name, self)
             action.triggered.connect(lambda c, v=i: self.instrument_model.set_string_note(string_idx, v))
             menu.addAction(action)

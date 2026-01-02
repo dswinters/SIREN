@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtGui import QPainter, QPen, QColor, QFont
 from PySide6.QtCore import Qt, QRectF, QPointF
 from .base_view import BaseNoteView
-from .common import NOTE_NAMES, FONT_SIZE, INACTIVE_OPACITY
+from .common import FONT_SIZE, INACTIVE_OPACITY
 
 class PianoView(BaseNoteView):
     def __init__(self, scale_model, octaves=3):
@@ -105,7 +105,7 @@ class PianoView(BaseNoteView):
         painter.setPen(text_color)
         painter.setFont(QFont("Arial", FONT_SIZE, QFont.Bold))
         rect = QRectF(cx - radius, cy - radius, radius*2, radius*2)
-        painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[note_val])
+        painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:

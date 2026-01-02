@@ -4,7 +4,7 @@ from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF, QConicalGrad
 from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import RotationAnimationMixin
-from .common import NOTE_NAMES, INACTIVE_OPACITY
+from .common import INACTIVE_OPACITY
 
 class PolygonView(BaseNoteView, RotationAnimationMixin):
     def __init__(self, scale_model):
@@ -136,7 +136,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
                 
             painter.setPen(text_color)
             rect = QRectF(pos.x() - note_radius, pos.y() - note_radius, note_radius*2, note_radius*2)
-            painter.drawText(rect, Qt.AlignCenter, NOTE_NAMES[i])
+            painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[i])
 
     def mousePressEvent(self, event):
         click_pos = event.position()
