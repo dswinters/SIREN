@@ -26,6 +26,11 @@ class ScaleModel(QObject):
         self._mask[idx] = not self._mask[idx]
         self.updated.emit()
 
+    def set_mask(self, mask):
+        if len(mask) != 12: return
+        self._mask = list(mask)
+        self.updated.emit()
+
     def deactivate_all_notes(self):
         self._mask = [False] * 12
         self.updated.emit()

@@ -1,7 +1,9 @@
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-                               QPushButton)
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                               QPushButton, QLabel)
+from PySide6.QtCore import Qt
 from models import InstrumentModel, ScaleModel
 from controls import PresetSelector, OffsetController, ColormapDropdown
+from controls.scale_dropdown import ScaleSelectDropdown
 from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
 from .polygon import PolygonView
@@ -51,6 +53,16 @@ class MainWindow(QMainWindow):
         self.colormap_selector = ColormapDropdown()
         self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
 
+        self.scale_dropdown = ScaleSelectDropdown(self.scale_model)
+
+        self.lbl_mode = QLabel("Change Mode")
+        self.lbl_mode.setAlignment(Qt.AlignCenter)
+        self.lbl_mode.setStyleSheet("font-size: 10px; font-weight: bold; color: #888;")
+        
+        self.lbl_trans = QLabel("Transpose")
+        self.lbl_trans.setAlignment(Qt.AlignCenter)
+        self.lbl_trans.setStyleSheet("font-size: 10px; font-weight: bold; color: #888;")
+
         self.preset_selector = PresetSelector()
         self.preset_selector.currentTextChanged.connect(self.change_tuning)
 
@@ -69,14 +81,18 @@ class MainWindow(QMainWindow):
         scale_layout.setContentsMargins(0, 10, 0, 0)
         
         ctrl_layout = QVBoxLayout()
+        ctrl_layout.addWidget(self.lbl_mode)
         row1 = QHBoxLayout()
         row1.addWidget(self.btn_left)
         row1.addWidget(self.btn_right)
+        ctrl_layout.addLayout(row1)
+        
+        ctrl_layout.addWidget(self.lbl_trans)
         row2 = QHBoxLayout()
         row2.addWidget(self.btn_trans_left)
         row2.addWidget(self.btn_trans_right)
-        ctrl_layout.addLayout(row1)
         ctrl_layout.addLayout(row2)
+        ctrl_layout.addWidget(self.scale_dropdown)
         
         scale_layout.addLayout(ctrl_layout)
         scale_layout.addWidget(self.scale_view)
