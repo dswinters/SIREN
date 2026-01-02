@@ -102,3 +102,19 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
         elif event.button() == Qt.RightButton:
             if not self.is_animating():
                 self.scale_model.set_rotation_offset(clicked_val)
+
+    def wheelEvent(self, event):
+        if self.is_animating():
+            return
+        
+        delta = event.angleDelta().y()
+        steps = 0
+        if delta > 0: steps = -1
+        elif delta < 0: steps = 1
+        
+        if steps == 0: return
+
+        if event.modifiers() & Qt.ShiftModifier:
+            self.scale_model.transpose(steps)
+        else:
+            self.scale_model.rotate_modes(steps)

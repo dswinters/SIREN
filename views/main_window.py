@@ -19,15 +19,25 @@ class MainWindow(QMainWindow):
 
         self.btn_left = QPushButton("<")
         self.btn_right = QPushButton(">")
-        for b in [self.btn_left, self.btn_right]:
+        self.btn_trans_left = QPushButton("<")
+        self.btn_trans_right = QPushButton(">")
+        
+        for b in [self.btn_left, self.btn_right, self.btn_trans_left, self.btn_trans_right]:
             b.setFixedWidth(30)
             b.setStyleSheet("font-weight: bold; font-size: 14px;")
+
+        self.btn_left.setToolTip("Rotate Mode")
+        self.btn_right.setToolTip("Rotate Mode")
+        self.btn_trans_left.setToolTip("Transpose -1")
+        self.btn_trans_right.setToolTip("Transpose +1")
 
         # Inverted direction for visual intuition: 
         # Right Arrow -> Content moves Left (Next items appear) -> Offset +1
         # Left Arrow -> Content moves Right (Prev items appear) -> Offset -1
-        self.btn_right.clicked.connect(lambda: self.rotate_view(1))
-        self.btn_left.clicked.connect(lambda: self.rotate_view(-1))
+        self.btn_right.clicked.connect(lambda: self.rotate_modes(1))
+        self.btn_left.clicked.connect(lambda: self.rotate_modes(-1))
+        self.btn_trans_left.clicked.connect(lambda: self.scale_model.transpose(-1))
+        self.btn_trans_right.clicked.connect(lambda: self.scale_model.transpose(1))
 
         self.btn_clear = QPushButton("Deactivate All Notes")
         self.btn_reset = QPushButton("Activate All Notes")
@@ -57,8 +67,18 @@ class MainWindow(QMainWindow):
         
         scale_layout = QHBoxLayout()
         scale_layout.setContentsMargins(0, 10, 0, 0)
-        scale_layout.addWidget(self.btn_left)
-        scale_layout.addWidget(self.btn_right)
+        
+        ctrl_layout = QVBoxLayout()
+        row1 = QHBoxLayout()
+        row1.addWidget(self.btn_left)
+        row1.addWidget(self.btn_right)
+        row2 = QHBoxLayout()
+        row2.addWidget(self.btn_trans_left)
+        row2.addWidget(self.btn_trans_right)
+        ctrl_layout.addLayout(row1)
+        ctrl_layout.addLayout(row2)
+        
+        scale_layout.addLayout(ctrl_layout)
         scale_layout.addWidget(self.scale_view)
 
         layout = QVBoxLayout()
@@ -70,12 +90,12 @@ class MainWindow(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def rotate_view(self, direction):
+    def rotate_modes(self, direction):
         if self.scale_view.is_animating():
             return
         if hasattr(self, 'polygon_window') and self.polygon_window.isVisible() and self.polygon_window.is_animating():
             return
-        self.scale_model.rotate_view(direction)
+        self.scale_model.rotate_modes(direction)
 
     def open_polygon_view(self):
         if not hasattr(self, 'polygon_window') or not self.polygon_window.isVisible():

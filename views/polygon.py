@@ -12,9 +12,24 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
         self.setWindowTitle("Polygon View")
         self.resize(400, 400)
         self.setStyleSheet("background-color: #121212;")
+        self._last_mask = self.scale_model.mask
+        self._static_polygon = False
 
         # Initialize animation from Mixin
         self.init_animation()
+
+    def on_model_update(self):
+        new_mask = self.scale_model.mask
+        target = self.scale_model.rotation_offset
+        
+        # If mask is unchanged but offset changed, it's a transpose -> static polygon
+        if new_mask == self._last_mask and target != self._anim_offset:
+            self._static_polygon = True
+        else:
+            self._static_polygon = False
+            
+        self._last_mask = new_mask
+        RotationAnimationMixin.on_model_update(self)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -68,7 +83,6 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
         # Calculate positions
         offset = self._anim_offset
         note_positions = {}
-        active_points = []
         
         for i in range(12):
             # -90 degrees is top. 
@@ -82,8 +96,18 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
             p = QPointF(nx, ny)
             note_positions[i] = p
             
+        # Calculate polygon points
+        # Use target offset for static polygon (Transpose), anim offset otherwise (Rotate)
+        poly_offset = self.scale_model.rotation_offset if self._static_polygon else self._anim_offset
+        active_points = []
+        
+        for i in range(12):
             if i in self.scale_model.active_notes:
-                active_points.append(p)
+                angle_deg = -90 + (i - poly_offset) * 30
+                angle_rad = math.radians(angle_deg)
+                px = cx + radius * math.cos(angle_rad)
+                py = cy + radius * math.sin(angle_rad)
+                active_points.append(QPointF(px, py))
 
         # Draw polygon connecting active notes
         if len(active_points) > 1:
@@ -138,8 +162,17 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
     def wheelEvent(self, event):
         if self.is_animating():
             return
+        
         delta = event.angleDelta().y()
+        steps = 0
         if delta > 0:
-            self.scale_model.rotate_view(-1)
+            steps = -1
         elif delta < 0:
-            self.scale_model.rotate_view(1)
+            steps = 1
+            
+        if steps == 0: return
+
+        if event.modifiers() & Qt.ShiftModifier:
+            self.scale_model.transpose(steps)
+        else:
+            self.scale_model.rotate_modes(steps)
