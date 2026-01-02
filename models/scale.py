@@ -6,7 +6,7 @@ class ScaleModel(QObject):
     def __init__(self):
         super().__init__()
         # 12-bit mask, True = active. Index 0 is the note at rotation_offset.
-        self._mask = [True] * 12
+        self._mask = [True, False, True, False, True, True, False, True, False, True, False, True]
         self._rotation_offset = 0
 
     @property

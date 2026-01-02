@@ -4,6 +4,8 @@ from PySide6.QtGui import QColor
 try:
     from cmcrameri import cm
     CYCLIC_MAPS = sorted([name for name in cm.cmaps if name.endswith('O')])
+    if "romaO" in CYCLIC_MAPS:
+        CYCLIC_MAPS.insert(0, CYCLIC_MAPS.pop(CYCLIC_MAPS.index("romaO")))
 except ImportError:
     print("Error: 'cmcrameri' package not found. Install via: pip install cmcrameri")
     sys.exit(1)
