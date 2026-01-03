@@ -1,7 +1,16 @@
-"Ionian (Major)": [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]
-"Dorian": [1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0]
-"Phrygian": [1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0]
-"Lydian": [1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1]
-"Mixolydian": [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]
-"Aeolian (Minor)": [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0]
-"Locrian": [1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0]
+"Diatonic Modes":
+  - "Ionian (Major)": 2741
+  - "Dorian": 1709
+  - "Phrygian": 1451
+  - "Lydian": 2773
+  - "Mixolydian": 1717
+  - "Aeolian (Minor)": 1453
+  - "Locrian": 1387
+"Harmonic Minor":
+  - "Harmonic Minor": 2477
+  - "Locrian #6": 1643
+  - "Ionian #5": 2869
+  - "Dorian #4": 1741
+  - "Phrygian Dominant": 1459
+  - "Lydian #2": 2777
+  - "Superlocrian": 1371
