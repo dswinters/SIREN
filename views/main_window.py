@@ -28,6 +28,10 @@ class MainWindow(QMainWindow):
         self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
         self.scale_model.updated.connect(self.on_scale_updated)
 
+        self.lbl_scale_name = QLabel("")
+        self.lbl_scale_name.setAlignment(Qt.AlignCenter)
+        self.lbl_scale_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #CCCCCC; padding: 5px;")
+
         # --- CONTROLS ---
 
         # 1. Visualization Controls
@@ -183,6 +187,7 @@ class MainWindow(QMainWindow):
         right_layout.setSpacing(0)
         right_layout.addWidget(self.central_stack)
         right_layout.addWidget(self.scale_view)
+        right_layout.addWidget(self.lbl_scale_name)
 
         # Main Layout
         main_widget = QWidget()
@@ -193,6 +198,9 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(right_widget)
         
         self.setCentralWidget(main_widget)
+        
+        # Initialize label
+        self.on_scale_updated()
 
     def toggle_instrument_view(self):
         if self.central_stack.currentIndex() == 0:
@@ -217,6 +225,22 @@ class MainWindow(QMainWindow):
 
     def on_scale_updated(self):
         self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
+        
+        # Update scale name label
+        root_name = self.scale_model.note_names[self.scale_model.root_note]
+        current_val = self.scale_model.value
+        scale_name = None
+        
+        for i in range(self.scale_dropdown.count()):
+            val = self.scale_dropdown.itemData(i)
+            if val is not None and int(val) == current_val:
+                scale_name = self.scale_dropdown.itemText(i).strip()
+                break
+        
+        if scale_name:
+            self.lbl_scale_name.setText(f"{root_name} {scale_name}")
+        else:
+            self.lbl_scale_name.setText("")
 
     def rotate_modes(self, direction):
         if self.scale_view.is_animating():
