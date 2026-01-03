@@ -35,10 +35,10 @@ class ScaleModel(QObject):
         return False
 
     def _get_sharp_names(self):
-        return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+        return ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"]
 
     def _get_flat_names(self):
-        return ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+        return ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"]
 
     def _solve_naming(self, active_set, use_sharps):
         # Columns: C, D, E, F, G, A, B
@@ -54,12 +54,12 @@ class ScaleModel(QObject):
         if use_sharps:
             # Sharp row: C#(1), D#(3), E#(5), F#(6), G#(8), A#(10), B#(0)
             accidentals = [
-                (1, "C#"), (3, "D#"), (5, "E#"), (6, "F#"), (8, "G#"), (10, "A#"), (0, "B#")
+                (1, "C♯"), (3, "D♯"), (5, "E♯"), (6, "F♯"), (8, "G♯"), (10, "A♯"), (0, "B♯")
             ]
         else:
             # Flat row: Cb(11), Db(1), Eb(3), Fb(4), Gb(6), Ab(8), Bb(10)
             accidentals = [
-                (11, "Cb"), (1, "Db"), (3, "Eb"), (4, "Fb"), (6, "Gb"), (8, "Ab"), (10, "Bb")
+                (11, "C♭"), (1, "D♭"), (3, "E♭"), (4, "F♭"), (6, "G♭"), (8, "A♭"), (10, "B♭")
             ]
             
         # Recursive solver
@@ -133,12 +133,12 @@ class ScaleModel(QObject):
                     
                     # Fix target label
                     base_name = names[abs_proxy]
-                    if base_name.endswith('b'):
+                    if base_name.endswith('♭'):
                         new_name = base_name[:-1] + "♮"
-                    elif base_name.endswith('#'):
+                    elif base_name.endswith('♯'):
                         new_name = base_name[:-1] + "𝄪"
                     else:
-                        new_name = base_name + "#"
+                        new_name = base_name + "♯"
                     names[abs_target] = new_name
                     return names
 
@@ -162,8 +162,8 @@ class ScaleModel(QObject):
             def count_acc(names):
                 c = 0
                 for n in names:
-                    if '#' in n: c += 1
-                    if 'b' in n: c += 1
+                    if '♯' in n: c += 1
+                    if '♭' in n: c += 1
                     if '𝄪' in n: c += 2
                 return c
 
@@ -195,8 +195,8 @@ class ScaleModel(QObject):
             f_count = 0
             for i in range(12):
                 if (mask >> i) & 1:
-                    if '#' in s_names[i]: s_count += 1
-                    if 'b' in f_names[i]: f_count += 1
+                    if '♯' in s_names[i]: s_count += 1
+                    if '♭' in f_names[i]: f_count += 1
             
             if f_count < s_count:
                 self._accidental_mode = 'flat'

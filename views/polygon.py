@@ -14,6 +14,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
         self.setStyleSheet("background-color: #121212;")
         self._last_value = self.scale_model.value
         self._static_polygon = False
+        self._scale_name_text = ""
 
         # Initialize animation from Mixin
         self.init_animation()
@@ -30,6 +31,10 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
             
         self._last_value = new_value
         RotationAnimationMixin.on_model_update(self)
+
+    def set_scale_name(self, text):
+        self._scale_name_text = text
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -137,6 +142,12 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
             painter.setPen(text_color)
             rect = QRectF(pos.x() - note_radius, pos.y() - note_radius, note_radius*2, note_radius*2)
             painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[i])
+
+        # Draw Scale Name in Center
+        if self._scale_name_text:
+            painter.setPen(QColor("#CCCCCC"))
+            painter.setFont(QFont("Arial", 16, QFont.Bold))
+            painter.drawText(self.rect(), Qt.AlignCenter, self._scale_name_text)
 
     def mousePressEvent(self, event):
         click_pos = event.position()

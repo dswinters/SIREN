@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
                                QPushButton, QLabel, QComboBox, QStackedWidget,
                                QCheckBox, QLineEdit)
 from PySide6.QtCore import Qt, Slot
@@ -11,11 +11,13 @@ from .fretboard import FretboardView
 from .scale_selector import ScaleSelectorView
 from .piano import PianoView
 from .polygon import PolygonView
+from .common import NOTE_NAMES
+from .key_signature import KeySignatureView
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Guitar Scales Explorer")
+        self.setWindowTitle("Scales")
         self.resize(2200, 400)
 
         self.instrument_model = InstrumentModel()
@@ -23,6 +25,7 @@ class MainWindow(QMainWindow):
         self.fret_view = FretboardView(self.instrument_model, self.scale_model)
         self.piano_view = PianoView(self.scale_model)
         self.scale_view = ScaleSelectorView(self.scale_model)
+        self.key_signature_view = KeySignatureView(self.scale_model)
         
         self.sound_engine = SoundEngine()
         self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
@@ -68,6 +71,11 @@ class MainWindow(QMainWindow):
         self.btn_left.clicked.connect(lambda: self.rotate_modes(-1))
         self.btn_trans_left.clicked.connect(lambda: self.scale_model.transpose(-1))
         self.btn_trans_right.clicked.connect(lambda: self.scale_model.transpose(1))
+
+        self.cmb_transpose_root = QComboBox()
+        self.cmb_transpose_root.addItem("Note")
+        self.cmb_transpose_root.addItems(NOTE_NAMES)
+        self.cmb_transpose_root.currentIndexChanged.connect(self.on_transpose_root_changed)
 
         # 4. Sound Controls
         self.cmb_instrument = QComboBox()
@@ -150,6 +158,7 @@ class MainWindow(QMainWindow):
         row_trans = QHBoxLayout()
         row_trans.addWidget(QLabel("Transpose Key:"))
         row_trans.addStretch()
+        row_trans.addWidget(self.cmb_transpose_root)
         row_trans.addWidget(self.btn_trans_left)
         row_trans.addWidget(self.btn_trans_right)
         sb_layout.addLayout(row_trans)
@@ -186,8 +195,25 @@ class MainWindow(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(0)
         right_layout.addWidget(self.central_stack)
-        right_layout.addWidget(self.scale_view)
-        right_layout.addWidget(self.lbl_scale_name)
+        
+        # Bottom Section: Key Signature | Scale Selector + Label
+        bottom_widget = QWidget()
+        bottom_layout = QHBoxLayout(bottom_widget)
+        bottom_layout.setContentsMargins(20, 0, 0, 0)
+        bottom_layout.setSpacing(0)
+
+        bottom_layout.addWidget(self.key_signature_view)
+
+        scale_col_widget = QWidget()
+        scale_col_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        scale_col_layout = QVBoxLayout(scale_col_widget)
+        scale_col_layout.setContentsMargins(0, 0, 0, 0)
+        scale_col_layout.setSpacing(0)
+        scale_col_layout.addWidget(self.scale_view)
+        scale_col_layout.addWidget(self.lbl_scale_name)
+
+        bottom_layout.addWidget(scale_col_widget)
+        right_layout.addWidget(bottom_widget)
 
         # Main Layout
         main_widget = QWidget()
@@ -237,10 +263,15 @@ class MainWindow(QMainWindow):
                 scale_name = self.scale_dropdown.itemText(i).strip()
                 break
         
+        full_text = ""
         if scale_name:
-            self.lbl_scale_name.setText(f"{root_name} {scale_name}")
+            full_text = f"{root_name} {scale_name}"
+            self.lbl_scale_name.setText(full_text)
         else:
             self.lbl_scale_name.setText("")
+            
+        if hasattr(self, 'polygon_window') and self.polygon_window.isVisible():
+            self.polygon_window.set_scale_name(full_text)
 
     def rotate_modes(self, direction):
         if self.scale_view.is_animating():
@@ -253,6 +284,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, 'polygon_window') or not self.polygon_window.isVisible():
             self.polygon_window = PolygonView(self.scale_model)
             self.polygon_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
+            self.polygon_window.set_scale_name(self.lbl_scale_name.text())
             self.polygon_window.show()
         else:
             self.polygon_window.raise_()
@@ -285,6 +317,16 @@ class MainWindow(QMainWindow):
         self.cmb_instrument.setCurrentIndex(0)
         self.cmb_instrument.blockSignals(False)
 
+    def on_transpose_root_changed(self, index):
+        if index <= 0: return
+        note_val = index - 1
+        self.scale_model.set_root_note(note_val)
+        self.cmb_transpose_root.blockSignals(True)
+        self.cmb_transpose_root.setCurrentIndex(0)
+        self.cmb_transpose_root.blockSignals(False)
+
     def closeEvent(self, event):
         self.sound_engine.stop()
+        if hasattr(self, 'polygon_window') and self.polygon_window:
+            self.polygon_window.close()
         super().closeEvent(event)
