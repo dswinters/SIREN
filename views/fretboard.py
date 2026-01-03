@@ -6,6 +6,10 @@ from .base_view import BaseNoteView
 from .common import FONT_SIZE, INACTIVE_OPACITY, SINGLE_MARKERS, DOUBLE_MARKERS
 
 class FretboardView(BaseNoteView):
+    MARGIN_X = 60
+    MARGIN_TOP = 30
+    MARGIN_BOTTOM = 50
+
     def __init__(self, instrument_model, scale_model):
         super().__init__(scale_model)
         self.instrument_model = instrument_model
@@ -17,40 +21,36 @@ class FretboardView(BaseNoteView):
 
     def get_geometry(self):
         w, h = self.width(), self.height()
-        margin_x = 60
-        margin_top = 30
-        margin_bottom = 50 
         n = np.arange(self.instrument_model.num_frets + 1)
-        scale_length = (w - 2 * margin_x) / 0.75
-        fret_xs = (scale_length * (1 - 2**(-n/12))) + margin_x
+        scale_length = (w - 2 * self.MARGIN_X) / 0.75
+        fret_xs = (scale_length * (1 - 2**(-n/12))) + self.MARGIN_X
         
         if self.instrument_model.num_strings == 1:
             string_ys = np.array([h / 2])
         else:
-            string_ys = np.linspace(h - margin_bottom, margin_top, self.instrument_model.num_strings)
-        return fret_xs, string_ys, margin_x, margin_bottom
+            string_ys = np.linspace(h - self.MARGIN_BOTTOM, self.MARGIN_TOP, self.instrument_model.num_strings)
+        return fret_xs, string_ys
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
-        fret_xs, string_ys, margin_x, margin_bottom = self.get_geometry()
-        margin_top = 30 
+        fret_xs, string_ys = self.get_geometry()
 
         # Grid
         painter.setPen(QPen(QColor("#555555"), 2))
-        for y in string_ys: painter.drawLine(QLineF(margin_x, y, w - margin_x, y))
+        for y in string_ys: painter.drawLine(QLineF(self.MARGIN_X, y, w - self.MARGIN_X, y))
         painter.setPen(QPen(QColor("#AAAAAA"), 2))
-        fret_bot_y = h - margin_bottom
-        for x in fret_xs: painter.drawLine(QLineF(x, margin_top, x, fret_bot_y))
+        fret_bot_y = h - self.MARGIN_BOTTOM
+        for x in fret_xs: painter.drawLine(QLineF(x, self.MARGIN_TOP, x, fret_bot_y))
         if len(fret_xs) > 0:
             painter.setPen(QPen(QColor("#FFFFFF"), 5))
-            painter.drawLine(QLineF(fret_xs[0], margin_top, fret_xs[0], fret_bot_y))
+            painter.drawLine(QLineF(fret_xs[0], self.MARGIN_TOP, fret_xs[0], fret_bot_y))
 
         # Markers
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor("#FFFFFF"))
-        marker_y = h - (margin_bottom / 2)
+        marker_y = h - (self.MARGIN_BOTTOM / 2)
         def get_cx(f): return (fret_xs[f-1]+fret_xs[f])/2 if f <= self.instrument_model.num_frets else None
         
         for f in SINGLE_MARKERS:
@@ -92,7 +92,7 @@ class FretboardView(BaseNoteView):
                 painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
 
     def mousePressEvent(self, event):
-        fret_xs, string_ys, _, _ = self.get_geometry()
+        fret_xs, string_ys = self.get_geometry()
         click_pos = event.position()
         grid = self.instrument_model.get_note_grid()
         

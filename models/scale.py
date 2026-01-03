@@ -3,6 +3,19 @@ from PySide6.QtCore import QObject, Signal
 class ScaleModel(QObject):
     updated = Signal()
 
+    SHARP_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"]
+    FLAT_NAMES = ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"]
+
+    _NATURALS = [
+        (0, "C"), (2, "D"), (4, "E"), (5, "F"), (7, "G"), (9, "A"), (11, "B")
+    ]
+    _SHARP_ACCIDENTALS = [
+        (1, "C♯"), (3, "D♯"), (5, "E♯"), (6, "F♯"), (8, "G♯"), (10, "A♯"), (0, "B♯")
+    ]
+    _FLAT_ACCIDENTALS = [
+        (11, "C♭"), (1, "D♭"), (3, "E♭"), (4, "F♭"), (6, "G♭"), (8, "A♭"), (10, "B♭")
+    ]
+
     def __init__(self):
         super().__init__()
         # Ionian: (LSB)101011010101(MSB) = 2741
@@ -35,32 +48,17 @@ class ScaleModel(QObject):
         return False
 
     def _get_sharp_names(self):
-        return ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"]
+        return list(self.SHARP_NAMES)
 
     def _get_flat_names(self):
-        return ["C", "D♭", "D", "E♭", "E", "F", "G♭", "G", "A♭", "A", "B♭", "B"]
+        return list(self.FLAT_NAMES)
 
     def _solve_naming(self, active_set, use_sharps):
         # Columns: C, D, E, F, G, A, B
         # Each column has 2 options: Natural and (Sharp if use_sharps else Flat)
-        
-        # Options structure: list of (value, name, is_accidental)
-        # Natural row: C(0), D(2), E(4), F(5), G(7), A(9), B(11)
-        naturals = [
-            (0, "C"), (2, "D"), (4, "E"), (5, "F"), (7, "G"), (9, "A"), (11, "B")
-        ]
-        
-        # Accidental row
-        if use_sharps:
-            # Sharp row: C#(1), D#(3), E#(5), F#(6), G#(8), A#(10), B#(0)
-            accidentals = [
-                (1, "C♯"), (3, "D♯"), (5, "E♯"), (6, "F♯"), (8, "G♯"), (10, "A♯"), (0, "B♯")
-            ]
-        else:
-            # Flat row: Cb(11), Db(1), Eb(3), Fb(4), Gb(6), Ab(8), Bb(10)
-            accidentals = [
-                (11, "C♭"), (1, "D♭"), (3, "E♭"), (4, "F♭"), (6, "G♭"), (8, "A♭"), (10, "B♭")
-            ]
+
+        naturals = self._NATURALS
+        accidentals = self._SHARP_ACCIDENTALS if use_sharps else self._FLAT_ACCIDENTALS
             
         # Recursive solver
         # Returns list of (value, name, is_accidental) or None
@@ -107,7 +105,6 @@ class ScaleModel(QObject):
         for i in range(12):
             if (mask >> i) & 1:
                 active_set.add(i)
-
 
         # 1. Harmonic Minor Logic
         is_harm, offset = self._is_harmonic()

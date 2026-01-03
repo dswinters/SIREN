@@ -2,6 +2,7 @@ import time
 import threading
 import numpy as np
 from PySide6.QtCore import QObject, Signal
+from typing import List, Optional
 
 try:
     import sounddevice as sd
@@ -26,13 +27,13 @@ class SoundEngine(QObject):
         self._octave_shift = 0
 
     @property
-    def is_playing(self):
+    def is_playing(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
-    def get_available_instruments(self):
+    def get_available_instruments(self) -> List[str]:
         return ["Guitar", "Violin", "Piano"]
 
-    def set_instrument(self, name):
+    def set_instrument(self, name: str):
         if name in self.get_available_instruments():
             self._instrument = name
 
@@ -43,13 +44,13 @@ class SoundEngine(QObject):
         except ValueError:
             pass
 
-    def set_looping(self, enabled):
+    def set_looping(self, enabled: bool):
         self._looping = enabled
 
-    def change_octave(self, delta):
+    def change_octave(self, delta: int):
         self._octave_shift += delta
 
-    def update_scale(self, root_note, value):
+    def update_scale(self, root_note: int, value: int):
         self._root_note = root_note
         self._value = value
 
@@ -66,7 +67,7 @@ class SoundEngine(QObject):
         self._thread = None
         self.playback_stopped.emit()
 
-    def _karplus_strong(self, frequency, duration):
+    def _karplus_strong(self, frequency: float, duration: float) -> np.ndarray:
         sample_rate = self._sample_rate
         n_samples = int(sample_rate * duration)
         

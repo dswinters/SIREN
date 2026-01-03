@@ -20,17 +20,26 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Scales")
         self.resize(2200, 400)
 
+        self._init_models()
+        self._init_ui()
+        self._setup_layout()
+        self._connect_signals()
+        
+        # Initialize label
+        self.on_scale_updated()
+
+    def _init_models(self):
         self.instrument_model = InstrumentModel()
         self.scale_model = ScaleModel()
+        self.sound_engine = SoundEngine()
+
+    def _init_ui(self):
+        # Views
         self.fret_view = FretboardView(self.instrument_model, self.scale_model)
         self.piano_view = PianoView(self.scale_model)
         self.scale_view = ScaleSelectorView(self.scale_model)
         self.key_signature_view = KeySignatureView(self.scale_model)
         
-        self.sound_engine = SoundEngine()
-        self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
-        self.scale_model.updated.connect(self.on_scale_updated)
-
         self.lbl_scale_name = QLabel("")
         self.lbl_scale_name.setAlignment(Qt.AlignCenter)
         self.lbl_scale_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #CCCCCC; padding: 5px;")
@@ -39,19 +48,13 @@ class MainWindow(QMainWindow):
 
         # 1. Visualization Controls
         self.btn_toggle_view = QPushButton("Piano")
-        self.btn_toggle_view.clicked.connect(self.toggle_instrument_view)
-        
         self.colormap_selector = ColormapDropdown()
-        self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
-        
         self.btn_polygon = QPushButton("Polygon")
-        self.btn_polygon.clicked.connect(self.open_polygon_view)
 
         # 2. Instrument Controls
         self.preset_selector = PresetSelector()
         self.preset_selector.insertItem(0, "Select Tuning")
         self.preset_selector.setCurrentIndex(0)
-        self.preset_selector.currentTextChanged.connect(self.change_tuning)
         
         self.offset_controller = OffsetController(self.instrument_model)
 
@@ -67,44 +70,30 @@ class MainWindow(QMainWindow):
             b.setFixedWidth(30)
             b.setStyleSheet("font-weight: bold; font-size: 14px;")
 
-        self.btn_right.clicked.connect(lambda: self.rotate_modes(1))
-        self.btn_left.clicked.connect(lambda: self.rotate_modes(-1))
-        self.btn_trans_left.clicked.connect(lambda: self.scale_model.transpose(-1))
-        self.btn_trans_right.clicked.connect(lambda: self.scale_model.transpose(1))
-
         self.cmb_transpose_root = QComboBox()
         self.cmb_transpose_root.addItem("Note")
         self.cmb_transpose_root.addItems(NOTE_NAMES)
-        self.cmb_transpose_root.currentIndexChanged.connect(self.on_transpose_root_changed)
 
         # 4. Sound Controls
         self.cmb_instrument = QComboBox()
         self.cmb_instrument.addItem("Select Instrument")
         self.cmb_instrument.addItems(self.sound_engine.get_available_instruments())
-        self.cmb_instrument.currentTextChanged.connect(self.on_instrument_changed)
         
         self.btn_play = QPushButton("Play")
-        self.btn_play.clicked.connect(self.toggle_playback)
-        
         self.chk_loop = QCheckBox("Loop")
-        self.chk_loop.toggled.connect(self.sound_engine.set_looping)
 
         self.btn_oct_down = QPushButton("-")
         self.btn_oct_up = QPushButton("+")
         for b in [self.btn_oct_down, self.btn_oct_up]:
             b.setFixedWidth(30)
             b.setStyleSheet("font-size: 10px; font-weight: bold;")
-        self.btn_oct_down.clicked.connect(lambda: self.sound_engine.change_octave(-1))
-        self.btn_oct_up.clicked.connect(lambda: self.sound_engine.change_octave(1))
         
         self.txt_bpm = QLineEdit("120")
         self.txt_bpm.setFixedWidth(40)
         self.txt_bpm.setValidator(QIntValidator(1, 999))
         self.txt_bpm.setPlaceholderText("BPM")
-        self.txt_bpm.textChanged.connect(self.sound_engine.set_bpm)
-        
-        # --- LAYOUT CONSTRUCTION ---
-        
+
+    def _setup_layout(self):
         # Sidebar Container
         sidebar = QWidget()
         sidebar.setFixedWidth(260)
@@ -224,9 +213,26 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(right_widget)
         
         self.setCentralWidget(main_widget)
+
+    def _connect_signals(self):
+        self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
+        self.scale_model.updated.connect(self.on_scale_updated)
         
-        # Initialize label
-        self.on_scale_updated()
+        self.btn_toggle_view.clicked.connect(self.toggle_instrument_view)
+        self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
+        self.btn_polygon.clicked.connect(self.open_polygon_view)
+        self.preset_selector.currentTextChanged.connect(self.change_tuning)
+        self.btn_right.clicked.connect(lambda: self.rotate_modes(1))
+        self.btn_left.clicked.connect(lambda: self.rotate_modes(-1))
+        self.btn_trans_left.clicked.connect(lambda: self.scale_model.transpose(-1))
+        self.btn_trans_right.clicked.connect(lambda: self.scale_model.transpose(1))
+        self.cmb_transpose_root.currentIndexChanged.connect(self.on_transpose_root_changed)
+        self.cmb_instrument.currentTextChanged.connect(self.on_instrument_changed)
+        self.btn_play.clicked.connect(self.toggle_playback)
+        self.chk_loop.toggled.connect(self.sound_engine.set_looping)
+        self.btn_oct_down.clicked.connect(lambda: self.sound_engine.change_octave(-1))
+        self.btn_oct_up.clicked.connect(lambda: self.sound_engine.change_octave(1))
+        self.txt_bpm.textChanged.connect(self.sound_engine.set_bpm)
 
     def toggle_instrument_view(self):
         if self.central_stack.currentIndex() == 0:
