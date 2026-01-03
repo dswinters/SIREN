@@ -17,7 +17,7 @@ from .key_signature import KeySignatureView
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Scales")
+        self.setWindowTitle("SIREN")
         self.resize(2200, 400)
 
         self._init_models()
