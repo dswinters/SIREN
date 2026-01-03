@@ -5,10 +5,13 @@ class ScaleModel(QObject):
 
     def __init__(self):
         super().__init__()
-        # Ionian: 101011010101 -> 2741
+        # Ionian: (LSB)101011010101(MSB) = 2741
         self._value = 2741
         self._root_note = 0
-        self._force_accidental = None # None (Auto), 'sharp', 'flat'
+        self._accidental_mode = 'sharp'
+        self._sharp_rep = None
+        self._flat_rep = None
+        self._update_representations()
 
     @property
     def active_notes(self):
@@ -88,164 +91,167 @@ class ScaleModel(QObject):
 
         return solve(0, active_set)
 
-    def _is_using_sharps(self):
-        # 1. Check Force
-        if self._force_accidental == 'sharp': return True
-        if self._force_accidental == 'flat': return False
+    def _is_harmonic(self):
+        # C Harmonic Minor: 101101011001, bit-reversed = 2477
+        mask = 2477
+        for i in range(12):
+            rotated = ((mask >> i) | (mask << (12 - i))) & 0xFFF
+            if self._value == rotated:
+                return True, i
+        return False, 0
 
-        # 2. Diatonic Logic
+    def _compute_representation(self, use_sharps):
+        # Get active notes (absolute)
         active_set = set()
         mask = self.active_notes
         for i in range(12):
             if (mask >> i) & 1:
                 active_set.add(i)
 
-        sharp_sol = self._solve_naming(active_set, True)
-        flat_sol = self._solve_naming(active_set, False)
-        
-        if sharp_sol or flat_sol:
-            if sharp_sol and not flat_sol: return True
-            if flat_sol and not sharp_sol: return False
-            # Both exist
-            s_acc = sum(1 for _, _, is_acc in sharp_sol if is_acc)
-            f_acc = sum(1 for _, _, is_acc in flat_sol if is_acc)
+
+        # 1. Harmonic Minor Logic
+        is_harm, offset = self._is_harmonic()
+        if is_harm:
+            # Target relative to pattern root (index 0 of _value)
+            rel_target = (11 - offset) % 12
+            # Target absolute
+            abs_target = (rel_target + self._root_note) % 12
+            # Diatonic proxy (semitone down)
+            abs_proxy = (abs_target - 1) % 12
             
-            if f_acc < s_acc: return False
-            elif s_acc < f_acc: return True
-            else:
-                return self._root_note not in [1, 3, 5, 8, 10]
+            if abs_target in active_set:
+                proxy_set = active_set.copy()
+                proxy_set.remove(abs_target)
+                proxy_set.add(abs_proxy)
+                
+                sol = self._solve_naming(proxy_set, use_sharps)
+                if sol:
+                    # Build names list
+                    names = self._get_sharp_names() if use_sharps else self._get_flat_names()
+                    for val, name, _ in sol:
+                        names[val] = name
+                    
+                    # Fix target label
+                    base_name = names[abs_proxy]
+                    if base_name.endswith('b'):
+                        new_name = base_name[:-1] + "♮"
+                    elif base_name.endswith('#'):
+                        new_name = base_name[:-1] + "𝄪"
+                    else:
+                        new_name = base_name + "#"
+                    names[abs_target] = new_name
+                    return names
 
-        # 3. Non-Diatonic Logic
-        s_names = self._get_sharp_names()
-        f_names = self._get_flat_names()
-        s_count = 0
-        f_count = 0
-        for i in range(12):
-            if (mask >> i) & 1:
-                if '#' in s_names[i]: s_count += 1
-                if 'b' in f_names[i]: f_count += 1
-        
-        if f_count < s_count: return False
-        elif s_count < f_count: return True
-        else:
-            return self._root_note not in [1, 3, 5, 8, 10]
-
-    @property
-    def note_names(self):
-        # Get active notes as a set of integers
-        active_set = set()
-        mask = self.active_notes
-        for i in range(12):
-            if (mask >> i) & 1:
-                active_set.add(i)
-
-        # Try to solve for both representations
-        sharp_sol = self._solve_naming(active_set, True)
-        flat_sol = self._solve_naming(active_set, False)
-        
-        # Determine winner
-        winner = None
-        
-        if self._force_accidental == 'sharp' and sharp_sol:
-            winner = (sharp_sol, True)
-        elif self._force_accidental == 'flat' and flat_sol:
-            winner = (flat_sol, False)
-        elif sharp_sol and not flat_sol:
-            winner = (sharp_sol, True)
-        elif flat_sol and not sharp_sol:
-            winner = (flat_sol, False)
-        elif sharp_sol and flat_sol:
-            # Tie-breaker: fewest accidentals
-            s_acc = sum(1 for _, _, is_acc in sharp_sol if is_acc)
-            f_acc = sum(1 for _, _, is_acc in flat_sol if is_acc)
-            
-            if f_acc < s_acc:
-                winner = (flat_sol, False)
-            elif s_acc < f_acc:
-                winner = (sharp_sol, True)
-            else:
-                # Tie-breaker based on root preference
-                if self._root_note in [1, 3, 5, 8, 10]:
-                    winner = (flat_sol, False)
-                else:
-                    winner = (sharp_sol, True)
-
-        if winner:
-            sol, is_sharp_rep = winner
-            # Build full name list
-            names = self._get_sharp_names() if is_sharp_rep else self._get_flat_names()
+        # 2. Standard Logic
+        sol = self._solve_naming(active_set, use_sharps)
+        if sol:
+            names = self._get_sharp_names() if use_sharps else self._get_flat_names()
             for val, name, _ in sol:
                 names[val] = name
             return names
+            
+        return None
 
-        # 2. Non-Diatonic / Fallback Logic
-        s_names = self._get_sharp_names()
-        f_names = self._get_flat_names()
-
-        if self._force_accidental == 'sharp':
-            return s_names
-        if self._force_accidental == 'flat':
-            return f_names
-
-        # Auto-detect: Count accidentals in active notes
-        s_count = 0
-        f_count = 0
-        for i in range(12):
-            if (mask >> i) & 1:
-                if '#' in s_names[i]: s_count += 1
-                if 'b' in f_names[i]: f_count += 1
+    def _update_representations(self):
+        self._sharp_rep = self._compute_representation(True)
+        self._flat_rep = self._compute_representation(False)
         
-        if f_count < s_count:
-            return f_names
-        elif s_count < f_count:
-            return s_names
+        # Determine mode
+        if self._sharp_rep and self._flat_rep:
+            # Count accidentals
+            def count_acc(names):
+                c = 0
+                for n in names:
+                    if '#' in n: c += 1
+                    if 'b' in n: c += 1
+                    if '𝄪' in n: c += 2
+                return c
+
+            s_count = count_acc(self._sharp_rep)
+            f_count = count_acc(self._flat_rep)
+            
+            if f_count < s_count:
+                self._accidental_mode = 'flat'
+            elif s_count < f_count:
+                self._accidental_mode = 'sharp'
+            else:
+                # Tie-breaker
+                if self._root_note in [1, 3, 5, 8, 10]:
+                    self._accidental_mode = 'flat'
+                else:
+                    self._accidental_mode = 'sharp'
+                    
+        elif self._sharp_rep:
+            self._accidental_mode = 'sharp'
+        elif self._flat_rep:
+            self._accidental_mode = 'flat'
         else:
-            if self._root_note in [1, 3, 5, 8, 10]:
-                return f_names
-            return s_names
+            # Both invalid (e.g. Chromatic)
+            # Fallback to simple count
+            s_names = self._get_sharp_names()
+            f_names = self._get_flat_names()
+            mask = self.active_notes
+            s_count = 0
+            f_count = 0
+            for i in range(12):
+                if (mask >> i) & 1:
+                    if '#' in s_names[i]: s_count += 1
+                    if 'b' in f_names[i]: f_count += 1
+            
+            if f_count < s_count:
+                self._accidental_mode = 'flat'
+            elif s_count < f_count:
+                self._accidental_mode = 'sharp'
+            else:
+                if self._root_note in [1, 3, 5, 8, 10]:
+                    self._accidental_mode = 'flat'
+                else:
+                    self._accidental_mode = 'sharp'
+
+    @property
+    def note_names(self):
+        if self._accidental_mode == 'sharp':
+            if self._sharp_rep: return self._sharp_rep
+            return self._get_sharp_names()
+        else:
+            if self._flat_rep: return self._flat_rep
+            return self._get_flat_names()
 
     def toggle_naming_convention(self):
-        currently_sharps = self._is_using_sharps()
-        target_is_sharps = not currently_sharps
-
-        active_set = set()
-        mask = self.active_notes
-        for i in range(12):
-            if (mask >> i) & 1:
-                active_set.add(i)
-
-        current_valid = self._solve_naming(active_set, currently_sharps) is not None
-        target_valid = self._solve_naming(active_set, target_is_sharps) is not None
-
-        if current_valid and not target_valid:
-            return
-
-        if currently_sharps:
-            self._force_accidental = 'flat'
+        if self._accidental_mode == 'sharp':
+            # Try switching to flat
+            if self._flat_rep is not None:
+                self._accidental_mode = 'flat'
+                self.updated.emit()
+            elif self._sharp_rep is None:
+                # Both invalid, allow toggle
+                self._accidental_mode = 'flat'
+                self.updated.emit()
         else:
-            self._force_accidental = 'sharp'
-        self.updated.emit()
+            # Try switching to sharp
+            if self._sharp_rep is not None:
+                self._accidental_mode = 'sharp'
+                self.updated.emit()
+            elif self._flat_rep is None:
+                # Both invalid, allow toggle
+                self._accidental_mode = 'sharp'
+                self.updated.emit()
 
     def toggle_note_active(self, note_val):
         idx = (note_val - self._root_note) % 12
         self._value ^= (1 << idx)
+        self._update_representations()
         self.updated.emit()
 
     def set_value(self, val):
         self._value = val & 0xFFF
-        self._force_accidental = None
+        self._update_representations()
         self.updated.emit()
 
     def deactivate_all_notes(self):
         self._value = 0
-        self._force_accidental = None
+        self._update_representations()
         self.updated.emit()
-        
-    def activate_all_notes(self):
-        self._value = 0xFFF
-        self._force_accidental = None
-        self.updated.emit()
-
     def rotate_modes(self, direction):
         if self._value == 0: return
         
@@ -265,13 +271,13 @@ class ScaleModel(QObject):
         s = shift
         self._value = ((self._value >> s) | (self._value << (12 - s))) & 0xFFF
         
-        self._force_accidental = None
+        self._update_representations()
         self.updated.emit()
 
     def transpose(self, semitones):
         # Rotate offset, keep value same (Transposition)
         self._root_note = (self._root_note + semitones) % 12
-        self._force_accidental = None
+        self._update_representations()
         self.updated.emit()
 
     def set_root_note(self, offset):
@@ -282,5 +288,5 @@ class ScaleModel(QObject):
         # Rotate value right by diff to preserve absolute notes
         s = diff
         self._value = ((self._value >> s) | (self._value << (12 - s))) & 0xFFF
-        self._force_accidental = None
+        self._update_representations()
         self.updated.emit()
