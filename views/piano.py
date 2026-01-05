@@ -43,7 +43,7 @@ class PianoView(BaseNoteView):
                 if i in self.white_indices:
                     w_idx = self.white_indices.index(i)
                     x = octave_offset_x + (w_idx * key_w)
-                    rect = QRectF(x, 0, key_w, h)
+                    rect = QRectF(x, 0, key_w, h - 20)
                     self.white_keys.append((rect, note_val))
                 else:
                     # Black keys are centered on the boundary of white keys

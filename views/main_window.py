@@ -7,7 +7,7 @@ from models import InstrumentModel, ScaleModel
 from modules.sound import SoundEngine
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from controls.scale_dropdown import ScaleSelectDropdown
-from .fretboard import FretboardView
+from .fretboard import FretboardView, FretlessView
 from .scale_selector import ScaleSelectorView
 from .piano import PianoView
 from .polygon import PolygonView
@@ -36,6 +36,7 @@ class MainWindow(QMainWindow):
     def _init_ui(self):
         # Views
         self.fret_view = FretboardView(self.instrument_model, self.scale_model)
+        self.fretless_view = FretlessView(self.instrument_model, self.scale_model)
         self.piano_view = PianoView(self.scale_model)
         self.scale_view = ScaleSelectorView(self.scale_model)
         self.key_signature_view = KeySignatureView(self.scale_model)
@@ -47,7 +48,7 @@ class MainWindow(QMainWindow):
         # --- CONTROLS ---
 
         # 1. Visualization Controls
-        self.btn_toggle_view = QPushButton("Piano")
+        self.btn_toggle_view = QPushButton("Fretless")
         self.colormap_selector = ColormapDropdown()
         self.btn_polygon = QPushButton("Polygon")
 
@@ -178,6 +179,7 @@ class MainWindow(QMainWindow):
         self.central_stack = QStackedWidget()
         self.central_stack.addWidget(self.fret_view)
         self.central_stack.addWidget(self.piano_view)
+        self.central_stack.addWidget(self.fretless_view)
         
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
@@ -235,12 +237,16 @@ class MainWindow(QMainWindow):
         self.txt_bpm.textChanged.connect(self.sound_engine.set_bpm)
 
     def toggle_instrument_view(self):
-        if self.central_stack.currentIndex() == 0:
+        current = self.central_stack.currentIndex()
+        if current == 0: # Fretboard -> Fretless
+            self.central_stack.setCurrentIndex(2)
+            self.btn_toggle_view.setText("Piano")
+        elif current == 2: # Fretless -> Piano
             self.central_stack.setCurrentIndex(1)
             self.btn_toggle_view.setText("Fretboard")
-        else:
+        else: # Piano -> Fretboard
             self.central_stack.setCurrentIndex(0)
-            self.btn_toggle_view.setText("Piano")
+            self.btn_toggle_view.setText("Fretless")
 
     def toggle_playback(self):
         if self.sound_engine.is_playing:
@@ -303,6 +309,7 @@ class MainWindow(QMainWindow):
     def update_colormaps(self, name):
         self.fret_view.set_colormap(name)
         self.scale_view.set_colormap(name)
+        self.fretless_view.set_colormap(name)
         self.piano_view.set_colormap(name)
         if hasattr(self, 'polygon_window') and self.polygon_window:
             self.polygon_window.set_colormap(name)

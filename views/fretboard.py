@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt, QLineF, QPointF, QRectF
 from .base_view import BaseNoteView
 from .common import FONT_SIZE, INACTIVE_OPACITY, SINGLE_MARKERS, DOUBLE_MARKERS
 
-class FretboardView(BaseNoteView):
+class FingerboardView(BaseNoteView):
     MARGIN_X = 60
     MARGIN_TOP = 30
     MARGIN_BOTTOM = 50
@@ -31,6 +31,15 @@ class FretboardView(BaseNoteView):
             string_ys = np.linspace(h - self.MARGIN_BOTTOM, self.MARGIN_TOP, self.instrument_model.num_strings)
         return fret_xs, string_ys
 
+    def get_note_center(self, f_idx, x, prev_x):
+        raise NotImplementedError
+
+    def draw_markers(self, painter, fret_xs, marker_y):
+        pass
+
+    def get_fret_line_pen(self):
+        return QPen(QColor("#AAAAAA"), 2)
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -38,29 +47,21 @@ class FretboardView(BaseNoteView):
         fret_xs, string_ys = self.get_geometry()
 
         # Grid
-        painter.setPen(QPen(QColor("#555555"), 2))
+        painter.setPen(QPen(QColor("#555555"), 4))
         for y in string_ys: painter.drawLine(QLineF(self.MARGIN_X, y, w - self.MARGIN_X, y))
-        painter.setPen(QPen(QColor("#AAAAAA"), 2))
+        
+        painter.setPen(self.get_fret_line_pen())
         fret_bot_y = h - self.MARGIN_BOTTOM
         for x in fret_xs: painter.drawLine(QLineF(x, self.MARGIN_TOP, x, fret_bot_y))
+        
+        # Nut
         if len(fret_xs) > 0:
             painter.setPen(QPen(QColor("#FFFFFF"), 5))
             painter.drawLine(QLineF(fret_xs[0], self.MARGIN_TOP, fret_xs[0], fret_bot_y))
 
         # Markers
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor("#FFFFFF"))
         marker_y = h - (self.MARGIN_BOTTOM / 2)
-        def get_cx(f): return (fret_xs[f-1]+fret_xs[f])/2 if f <= self.instrument_model.num_frets else None
-        
-        for f in SINGLE_MARKERS:
-            cx = get_cx(f)
-            if cx: painter.drawEllipse(QPointF(cx, marker_y), 3, 3)
-        for f in DOUBLE_MARKERS:
-            cx = get_cx(f)
-            if cx:
-                painter.drawEllipse(QPointF(cx-6, marker_y), 3, 3)
-                painter.drawEllipse(QPointF(cx+6, marker_y), 3, 3)
+        self.draw_markers(painter, fret_xs, marker_y)
 
         # Notes
         grid = self.instrument_model.get_note_grid()
@@ -71,8 +72,8 @@ class FretboardView(BaseNoteView):
             for f_idx, x in enumerate(fret_xs):
                 note_val = grid[s_idx, f_idx]
                 
-                if f_idx == 0: text_x = x - 30 
-                else: text_x = (fret_xs[f_idx - 1] + x) / 2
+                prev_x = fret_xs[f_idx - 1] if f_idx > 0 else 0
+                text_x = self.get_note_center(f_idx, x, prev_x)
 
                 bg_color = self.get_color_for_note(note_val)
                 is_active = (self.scale_model.active_notes >> note_val) & 1
@@ -98,7 +99,8 @@ class FretboardView(BaseNoteView):
         
         for s_idx, y in enumerate(string_ys):
             for f_idx, x in enumerate(fret_xs):
-                cx = (x - 30) if f_idx == 0 else (fret_xs[f_idx - 1] + x) / 2
+                prev_x = fret_xs[f_idx - 1] if f_idx > 0 else 0
+                cx = self.get_note_center(f_idx, x, prev_x)
                 if np.sqrt((click_pos.x()-cx)**2 + (click_pos.y()-y)**2) < 15:
                     if event.button() == Qt.LeftButton:
                         self.scale_model.toggle_note_active(grid[s_idx, f_idx])
@@ -114,3 +116,31 @@ class FretboardView(BaseNoteView):
             action.triggered.connect(lambda c, v=i: self.instrument_model.set_string_note(string_idx, v))
             menu.addAction(action)
         menu.exec(global_pos)
+
+class FretboardView(FingerboardView):
+    def get_note_center(self, f_idx, x, prev_x):
+        if f_idx == 0: return x - 30
+        return (prev_x + x) / 2
+
+    def draw_markers(self, painter, fret_xs, marker_y):
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor("#FFFFFF"))
+        def get_cx(f): return (fret_xs[f-1]+fret_xs[f])/2 if f <= self.instrument_model.num_frets else None
+        
+        for f in SINGLE_MARKERS:
+            cx = get_cx(f)
+            if cx: painter.drawEllipse(QPointF(cx, marker_y), 3, 3)
+        for f in DOUBLE_MARKERS:
+            cx = get_cx(f)
+            if cx:
+                painter.drawEllipse(QPointF(cx-6, marker_y), 3, 3)
+                painter.drawEllipse(QPointF(cx+6, marker_y), 3, 3)
+
+class FretlessView(FingerboardView):
+    def get_note_center(self, f_idx, x, prev_x):
+        return x
+
+    def get_fret_line_pen(self):
+        c = QColor("#AAAAAA")
+        c.setAlphaF(0.2)
+        return QPen(c, 1)
