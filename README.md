@@ -60,7 +60,7 @@ python -m venv .venv
 With the virtual environment activated, install the required libraries:
 
 ```bash
-pip install PySide6 numpy sounddevice cmcrameri PyYAML
+pip install -r requirements.txt
 ```
 
 ## Running the Application
