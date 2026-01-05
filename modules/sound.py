@@ -13,6 +13,7 @@ except ImportError:
 
 class SoundEngine(QObject):
     playback_stopped = Signal()
+    note_played = Signal(int, float)
 
     def __init__(self):
         super().__init__()
@@ -176,6 +177,7 @@ class SoundEngine(QObject):
                 if self._stop_event.is_set(): break
                 
                 duration = 60.0 / self._bpm
+                self.note_played.emit(note % 12, duration)
                 
                 if HAS_AUDIO:
                     try:

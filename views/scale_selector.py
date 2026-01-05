@@ -3,10 +3,10 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtGui import QPainter, QFont, QColor, QPen
 from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
-from .mixins import RotationAnimationMixin
+from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY
 
-class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
+class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
     def __init__(self, scale_model):
         super().__init__(scale_model)
         
@@ -16,6 +16,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
         
         # Initialize animation from Mixin
         self.init_animation()
+        self.init_highlight_animation()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -62,7 +63,9 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin):
             is_active = (self.scale_model.active_notes >> note_val) & 1
             
             if is_active:
-                painter.setPen(QPen(QColor("#929292"), 4))
+                base_pen = QColor("#929292")
+                pen_color = self.get_interpolated_color(note_val, base_pen, QColor("#409C40"))
+                painter.setPen(QPen(pen_color, 4))
             else:
                 painter.setPen(Qt.NoPen)
             painter.setBrush(bg_color)

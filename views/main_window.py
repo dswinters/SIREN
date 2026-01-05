@@ -219,6 +219,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
         self.scale_model.updated.connect(self.on_scale_updated)
+        self.sound_engine.note_played.connect(self.scale_view.highlight_note)
         
         self.btn_toggle_view.clicked.connect(self.toggle_instrument_view)
         self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
@@ -297,6 +298,7 @@ class MainWindow(QMainWindow):
             self.polygon_window = PolygonView(self.scale_model)
             self.polygon_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
             self.polygon_window.set_scale_name(self.lbl_scale_name.text())
+            self.sound_engine.note_played.connect(self.polygon_window.highlight_note)
             self.polygon_window.show()
         else:
             self.polygon_window.raise_()

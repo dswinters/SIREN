@@ -1,4 +1,5 @@
-from PySide6.QtCore import QPropertyAnimation, QEasingCurve, Property
+from PySide6.QtCore import QPropertyAnimation, QEasingCurve, Property, QTimer
+from PySide6.QtGui import QColor
 
 class RotationAnimationMixin:
     """
@@ -40,3 +41,56 @@ class RotationAnimationMixin:
         self.anim.setEndValue(target)
         self.anim.start()
         self.update()
+
+class PlaybackHighlightMixin:
+    """
+    Mixin to provide visual highlighting when a note is played.
+    """
+    def init_highlight_animation(self):
+        self._highlight_data = {}
+        self._highlight_timer = QTimer(self)
+        self._highlight_timer.setInterval(16)
+        self._highlight_timer.timeout.connect(self._update_highlights)
+
+    def highlight_note(self, note_val, duration):
+        decay = 0.05
+        
+        self._highlight_data[note_val] = {
+            'val': 0.0,
+            'state': 'attack',
+            'decay': decay
+        }
+        if not self._highlight_timer.isActive():
+            self._highlight_timer.start()
+
+    def _update_highlights(self):
+        keys_to_remove = []
+        
+        for note, data in self._highlight_data.items():
+            if data['state'] == 'attack':
+                data['val'] += 0.25 # Fast attack (4 frames)
+                if data['val'] >= 1.0:
+                    data['val'] = 1.0
+                    data['state'] = 'decay'
+            elif data['state'] == 'decay':
+                data['val'] -= data['decay']
+                if data['val'] <= 0:
+                    data['val'] = 0
+                    keys_to_remove.append(note)
+        
+        for k in keys_to_remove:
+            del self._highlight_data[k]
+            
+        if not self._highlight_data:
+            self._highlight_timer.stop()
+            
+        self.update()
+
+    def get_interpolated_color(self, note_val, base_color, target_color):
+        val = self._highlight_data.get(note_val, {}).get('val', 0.0)
+        if val <= 0: return base_color
+        
+        r = base_color.red() * (1 - val) + target_color.red() * val
+        g = base_color.green() * (1 - val) + target_color.green() * val
+        b = base_color.blue() * (1 - val) + target_color.blue() * val
+        return QColor(int(r), int(g), int(b))

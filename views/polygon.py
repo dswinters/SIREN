@@ -3,10 +3,10 @@ from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF, QConicalGradient, QPainterPath
 from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
-from .mixins import RotationAnimationMixin
+from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY
 
-class PolygonView(BaseNoteView, RotationAnimationMixin):
+class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
     def __init__(self, scale_model):
         super().__init__(scale_model)
         self.setWindowTitle("Polygon View")
@@ -18,6 +18,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
 
         # Initialize animation from Mixin
         self.init_animation()
+        self.init_highlight_animation()
 
     def on_model_update(self):
         new_value = self.scale_model.value
@@ -128,7 +129,9 @@ class PolygonView(BaseNoteView, RotationAnimationMixin):
             bg_color = self.get_color_for_note(i, offset_override=offset)
             
             if is_active:
-                painter.setPen(QPen(QColor("white"), 2))
+                base_pen = QColor("white")
+                pen_color = self.get_interpolated_color(i, base_pen, QColor("#409C40"))
+                painter.setPen(QPen(pen_color, 2))
             else:
                 painter.setPen(Qt.NoPen)
             
