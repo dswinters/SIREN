@@ -15,6 +15,8 @@ FONT_SIZE = 11
 INACTIVE_OPACITY = 0.15
 SINGLE_MARKERS = [3, 5, 7, 9, 15, 17, 19, 21]
 DOUBLE_MARKERS = [12, 24]
+ACTIVE_EDGE_COLOR = "#FFFFFF"
+ACTIVE_EDGE_WIDTH = 4
 
 def get_cmap(name):
     return getattr(cm, name)

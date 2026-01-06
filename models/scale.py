@@ -277,6 +277,11 @@ class ScaleModel(QObject):
         self._update_representations()
         self.updated.emit()
 
+    def transpose_mask(self, semitones):
+        mask = self.active_notes
+        return ((mask >> (semitones % 12)) | (mask << (12 - (semitones % 12)))) & 0xFFF
+
+
     def set_root_note(self, offset):
         target = offset % 12
         diff = (target - self._root_note) % 12

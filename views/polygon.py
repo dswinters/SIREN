@@ -4,7 +4,7 @@ from PySide6.QtGui import QPainter, QFont, QColor, QPen, QPolygonF, QConicalGrad
 from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
-from .common import INACTIVE_OPACITY
+from .common import INACTIVE_OPACITY, ACTIVE_EDGE_COLOR, ACTIVE_EDGE_WIDTH
 
 class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
     def __init__(self, scale_model):
@@ -117,7 +117,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
 
         # Draw polygon connecting active notes
         if len(active_points) > 1:
-            painter.setPen(QPen(QColor("white"), 4))
+            painter.setPen(QPen(QColor(ACTIVE_EDGE_COLOR), ACTIVE_EDGE_WIDTH))
             painter.setBrush(QColor(255, 255, 255, 30))
             painter.drawPolygon(QPolygonF(active_points))
             
@@ -126,25 +126,16 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
         for i in range(12):
             pos = note_positions[i]
             is_active = (self.scale_model.active_notes >> i) & 1
-            bg_color = self.get_color_for_note(i, offset_override=offset)
+            is_root = (i == self.scale_model.root_note)
             
+            active_pen = None
             if is_active:
                 base_pen = QColor("white")
                 pen_color = self.get_interpolated_color(i, base_pen, QColor("#409C40"))
-                painter.setPen(QPen(pen_color, 2))
-            else:
-                painter.setPen(Qt.NoPen)
-            
-            painter.setBrush(bg_color)
-            painter.drawEllipse(pos, note_radius, note_radius)
-            
-            text_color = QColor("black") if bg_color.lightness() > 128 else QColor("white")
-            if not is_active:
-                text_color.setAlphaF(INACTIVE_OPACITY)
-                
-            painter.setPen(text_color)
-            rect = QRectF(pos.x() - note_radius, pos.y() - note_radius, note_radius*2, note_radius*2)
-            painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[i])
+                active_pen = QPen(pen_color, 2)
+
+            self.draw_note_label(painter, pos, note_radius, i, is_active, is_root, 
+                                 font_size=10, active_pen=active_pen, offset_override=offset)
 
         # Draw Scale Name in Center
         if self._scale_name_text:

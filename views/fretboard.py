@@ -65,7 +65,6 @@ class FingerboardView(BaseNoteView):
 
         # Notes
         grid = self.instrument_model.get_note_grid()
-        painter.setFont(QFont("Arial", FONT_SIZE, QFont.Bold))
         radius = 11
         
         for s_idx, y in enumerate(string_ys):
@@ -75,22 +74,12 @@ class FingerboardView(BaseNoteView):
                 prev_x = fret_xs[f_idx - 1] if f_idx > 0 else 0
                 text_x = self.get_note_center(f_idx, x, prev_x)
 
-                bg_color = self.get_color_for_note(note_val)
                 is_active = (self.scale_model.active_notes >> note_val) & 1
+                is_root = (note_val == self.scale_model.root_note)
+                active_pen = QPen(QColor("#929292"), 2)
                 
-                if is_active:
-                    painter.setPen(QPen(QColor("#929292"), 2))
-                else:
-                    painter.setPen(Qt.NoPen)
-                painter.setBrush(bg_color)
-                painter.drawEllipse(QPointF(text_x, y), radius, radius)
-                
-                text_color = QColor("black") if bg_color.lightness() > 128 else QColor("white")
-                if not is_active: text_color.setAlphaF(INACTIVE_OPACITY)
-                
-                painter.setPen(text_color)
-                rect = QRectF(text_x - radius, y - radius, radius*2, radius*2)
-                painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
+                self.draw_note_label(painter, QPointF(text_x, y), radius, note_val, is_active, is_root, 
+                                     font_size=FONT_SIZE, active_pen=active_pen)
 
     def mousePressEvent(self, event):
         fret_xs, string_ys = self.get_geometry()

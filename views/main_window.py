@@ -11,6 +11,7 @@ from .fretboard import FretboardView, FretlessView
 from .scale_selector import ScaleSelectorView
 from .piano import PianoView
 from .polygon import PolygonView
+from .tonnetz import TonnetzView
 from .common import NOTE_NAMES
 from .key_signature import KeySignatureView
 
@@ -51,6 +52,7 @@ class MainWindow(QMainWindow):
         self.btn_toggle_view = QPushButton("Fretless")
         self.colormap_selector = ColormapDropdown()
         self.btn_polygon = QPushButton("Polygon")
+        self.btn_tonnetz = QPushButton("Tonnetz")
 
         # 2. Instrument Controls
         self.preset_selector = PresetSelector()
@@ -119,6 +121,7 @@ class MainWindow(QMainWindow):
         row_views = QHBoxLayout()
         row_views.addWidget(self.btn_toggle_view)
         row_views.addWidget(self.btn_polygon)
+        row_views.addWidget(self.btn_tonnetz)
         sb_layout.addLayout(row_views)
         
         sb_layout.addSpacing(10)
@@ -224,6 +227,7 @@ class MainWindow(QMainWindow):
         self.btn_toggle_view.clicked.connect(self.toggle_instrument_view)
         self.colormap_selector.currentIndexChanged.connect(self.on_colormap_changed)
         self.btn_polygon.clicked.connect(self.open_polygon_view)
+        self.btn_tonnetz.clicked.connect(self.open_tonnetz_view)
         self.preset_selector.currentTextChanged.connect(self.change_tuning)
         self.btn_right.clicked.connect(lambda: self.rotate_modes(1))
         self.btn_left.clicked.connect(lambda: self.rotate_modes(-1))
@@ -291,6 +295,8 @@ class MainWindow(QMainWindow):
             return
         if hasattr(self, 'polygon_window') and self.polygon_window.isVisible() and self.polygon_window.is_animating():
             return
+        if hasattr(self, 'tonnetz_window') and self.tonnetz_window.isVisible() and self.tonnetz_window.is_animating():
+            return
         self.scale_model.rotate_modes(direction)
 
     def open_polygon_view(self):
@@ -304,6 +310,16 @@ class MainWindow(QMainWindow):
             self.polygon_window.raise_()
             self.polygon_window.activateWindow()
 
+    def open_tonnetz_view(self):
+        if not hasattr(self, 'tonnetz_window') or not self.tonnetz_window.isVisible():
+            self.tonnetz_window = TonnetzView(self.scale_model)
+            self.tonnetz_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
+            self.sound_engine.note_played.connect(self.tonnetz_window.highlight_note)
+            self.tonnetz_window.show()
+        else:
+            self.tonnetz_window.raise_()
+            self.tonnetz_window.activateWindow()
+
     def on_colormap_changed(self, index):
         name = self.colormap_selector.itemData(index)
         self.update_colormaps(name)
@@ -315,6 +331,8 @@ class MainWindow(QMainWindow):
         self.piano_view.set_colormap(name)
         if hasattr(self, 'polygon_window') and self.polygon_window:
             self.polygon_window.set_colormap(name)
+        if hasattr(self, 'tonnetz_window') and self.tonnetz_window:
+            self.tonnetz_window.set_colormap(name)
 
     def change_tuning(self, name):
         if name == "Select Tuning": return
@@ -344,4 +362,6 @@ class MainWindow(QMainWindow):
         self.sound_engine.stop()
         if hasattr(self, 'polygon_window') and self.polygon_window:
             self.polygon_window.close()
+        if hasattr(self, 'tonnetz_window') and self.tonnetz_window:
+            self.tonnetz_window.close()
         super().closeEvent(event)

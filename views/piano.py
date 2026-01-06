@@ -86,26 +86,13 @@ class PianoView(BaseNoteView):
         radius = 11
         cx = key_rect.center().x()
         cy = key_rect.bottom() - radius - 8
-        
-        bg_color = self.get_color_for_note(note_val)
+
         is_active = (self.scale_model.active_notes >> note_val) & 1
-        
-        if is_active:
-            painter.setPen(QPen(QColor("#929292"), 2))
-        else:
-            painter.setPen(Qt.NoPen)
-            
-        painter.setBrush(bg_color)
-        painter.drawEllipse(QPointF(cx, cy), radius, radius)
-        
-        text_color = QColor("black") if bg_color.lightness() > 128 else QColor("white")
-        if not is_active:
-            text_color.setAlphaF(INACTIVE_OPACITY)
-            
-        painter.setPen(text_color)
-        painter.setFont(QFont("Arial", FONT_SIZE, QFont.Bold))
-        rect = QRectF(cx - radius, cy - radius, radius*2, radius*2)
-        painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
+        is_root = (note_val == self.scale_model.root_note)
+        active_pen = QPen(QColor("#929292"), 2)
+
+        self.draw_note_label(painter, QPointF(cx, cy), radius, note_val, is_active, is_root, 
+                             font_size=FONT_SIZE, active_pen=active_pen)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
