@@ -177,132 +177,49 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
         bg_color = QColor(bg_r, bg_g, bg_b, 255)
         bg_transparent = QColor(bg_r, bg_g, bg_b, 0)
         
-        # Extension to ensure overlap with grid lines
-        ext = 5
-
-        # Draw Fade Overlay (Bottom)
-        # r=0 is bottom main row, r=-1 is bottom pad row
-        _, y_main_bottom = to_screen(0, 0)
-        _, y_pad_bottom = to_screen(0, -1)
-
-        # Extend rect slightly past y_pad_bottom
-        rect_bottom = QRectF(0, y_main_bottom, w, (y_pad_bottom - y_main_bottom) + ext)
-
-        grad_bottom = QLinearGradient(0, y_main_bottom, 0, y_pad_bottom)
-        grad_bottom.setColorAt(0, bg_transparent)
-        grad_bottom.setColorAt(0.95, bg_color) # Sharper ramp
-        grad_bottom.setColorAt(1, bg_color)
-
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QBrush(grad_bottom))
-        painter.drawRect(rect_bottom)
-
-        # Solid black below
-        rect_solid_bottom = QRectF(0, y_pad_bottom, w, h - y_pad_bottom)
-        painter.setBrush(bg_color)
-        painter.drawRect(rect_solid_bottom)
-
-        # Draw Fade Overlay (Top)
-        # r=core_rows-1 is top main row, r=core_rows is top pad row
-        _, y_main_top = to_screen(0, core_rows - 1)
-        _, y_pad_top = to_screen(0, core_rows)
-
-        # Extend rect slightly above y_pad_top
-        rect_top = QRectF(0, y_pad_top - ext, w, (y_main_top - y_pad_top) + ext)
-        
-        grad_top = QLinearGradient(0, y_main_top, 0, y_pad_top)
-        grad_top.setColorAt(0, bg_transparent)
-        grad_top.setColorAt(0.95, bg_color)
-        grad_top.setColorAt(1, bg_color)
-        
-        painter.setBrush(QBrush(grad_top))
-        painter.drawRect(rect_top)
-
-        # Solid background above
-        rect_solid_top = QRectF(0, 0, w, y_pad_top)
-        painter.setBrush(bg_color)
-        painter.drawRect(rect_solid_top)
-
-        # Draw Fade Overlay (Left & Right) - Slanted
-        # We use polygons to match the grid slant
-        mid_r = (core_rows - 1) / 2.0
-        
-        for col_idx, is_left in [(0, True), (core_cols, False)]:
-            # Inner line is at col_idx if right, col_idx-1 if left? 
-            # Left fade: c=0 (inner) to c=-1 (outer)
-            # Right fade: c=core_cols-1 (inner) to c=core_cols (outer)
+        def draw_fade(p1, p2):
+            # 1) Direction p2 -> p1
+            diff = p1 - p2
+            length = math.hypot(diff.x(), diff.y())
+            if length == 0: return
+            uw = diff / length
+            uh = QPointF(uw.y(), -uw.x())
+            m = (p1 + p2) / 2
+            rect_w = max(w, h)
+            rect_h = 2*self.spacing
             
-            c_inner = -1 if is_left else core_cols - 1
-            c_outer = -2 if is_left else core_cols # Extend further out
+            v1 = m + uw * (rect_w / 2)
+            v2 = m - uw * (rect_w / 2)
+            v3 = v2 + uh * rect_h
+            v4 = v1 + uh * rect_h
             
-            # Actually, let's just use the pad columns:
-            # Left: c=0 to c=-1. Right: c=core_cols-1 to c=core_cols.
-            c_in = 0 if is_left else core_cols - 1
-            c_out = -1 if is_left else core_cols
+            poly = QPolygonF([v1, v2, v3, v4])
             
-            p_in_top = QPointF(*to_screen(c_in, core_rows))
-            p_in_bot = QPointF(*to_screen(c_in, -1))
-            p_out_top = QPointF(*to_screen(c_out, core_rows))
-            p_out_bot = QPointF(*to_screen(c_out, -1))
-            
-            # Extend the outer points slightly to ensure overlap
-            # Vector from in to out
-            v_ext_top = p_out_top - p_in_top
-            v_ext_bot = p_out_bot - p_in_bot
-            # Scale slightly > 1.0 or just add a fixed amount? 
-            # Let's just use the gradient extrapolation (PadSpread) and extend geometry
-            p_ext_top = p_out_top + (v_ext_top * 0.2)
-            p_ext_bot = p_out_bot + (v_ext_bot * 0.2)
-            
-            # Extend the outer points slightly to ensure overlap
-            # Vector from in to out
-            v_ext_top = p_out_top - p_in_top
-            v_ext_bot = p_out_bot - p_in_bot
-            # Scale slightly > 1.0 or just add a fixed amount? 
-            # Let's just use the gradient extrapolation (PadSpread) and extend geometry
-            p_ext_top = p_out_top + (v_ext_top * 0.2)
-            p_ext_bot = p_out_bot + (v_ext_bot * 0.2)
-            
-            poly = QPolygonF([p_in_top, p_in_bot, p_ext_bot, p_ext_top])
-            
-            # Calculate Gradient Vector perpendicular to the edge
-            p_edge_1 = QPointF(*to_screen(c_in, 0))
-            p_edge_2 = QPointF(*to_screen(c_in, 1))
-            v_edge = p_edge_2 - p_edge_1
-            
-            v_perp = QPointF(-v_edge.y(), v_edge.x())
-            
-            p_start = QPointF(*to_screen(c_in, mid_r))
-            p_outer = QPointF(*to_screen(c_out, mid_r))
-            v_diff = p_outer - p_start
-            
-            dot_prod = v_diff.x() * v_perp.x() + v_diff.y() * v_perp.y()
-            len_sq = v_perp.x()**2 + v_perp.y()**2
-            
-            if len_sq > 0:
-                t = dot_prod / len_sq
-                v_grad = QPointF(v_perp.x() * t, v_perp.y() * t)
-                p_end = p_start + v_grad
-            else:
-                p_end = p_outer
-
-            grad = QLinearGradient(p_start, p_end)
+            grad = QLinearGradient(m, m + uh * rect_h)
             grad.setColorAt(0, bg_transparent)
-            grad.setColorAt(0.95, bg_color)
-            grad.setColorAt(1, bg_color)
+            grad.setColorAt(0.4, bg_color)
             
             painter.setBrush(QBrush(grad))
+            painter.setPen(Qt.NoPen)
             painter.drawPolygon(poly)
-            
-            # Solid block beyond the fade
-            # Extend 2000px outwards
-            shift = -2000 if is_left else 2000
-            p_far_top = QPointF(p_out_top.x() + shift, p_out_top.y())
-            p_far_bot = QPointF(p_out_bot.x() + shift, p_out_bot.y())
-            
-            poly_solid = QPolygonF([p_out_top, p_out_bot, p_far_bot, p_far_top])
-            painter.setBrush(bg_color)
-            painter.drawPolygon(poly_solid)
+
+
+        pt = lambda c, r: QPointF(*to_screen(c, r))
+        
+        p_ll = pt(0, 0)
+        p_lr = pt(core_cols - 1, 0)
+        p_ur = pt(core_cols - 1, core_rows - 1)
+        p_ul = pt(0, core_rows - 1)
+
+        edges = [
+            (p_ll, p_lr),
+            (p_lr, p_ur),
+            (p_ur, p_ul),
+            (p_ul, p_ll)
+        ]
+
+        for p1, p2 in edges:
+            draw_fade(p1, p2)
 
     def mousePressEvent(self, event):
         if not hasattr(self, '_grid_points'): return
