@@ -74,7 +74,7 @@ class FingerboardView(BaseNoteView):
                 prev_x = fret_xs[f_idx - 1] if f_idx > 0 else 0
                 text_x = self.get_note_center(f_idx, x, prev_x)
 
-                is_active = (self.scale_model.active_notes >> note_val) & 1
+                is_active = (self.scale_model.pitch_set >> note_val) & 1
                 is_root = (note_val == self.scale_model.root_note)
                 active_pen = QPen(QColor("#929292"), 2)
                 

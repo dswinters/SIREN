@@ -103,7 +103,7 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
                 if valid:
                     painter.drawPolygon(QPolygonF(points))
 
-        mask = self.scale_model.active_notes
+        mask = self.scale_model.pitch_set
 
         # Major Triads (Color 6): Node (3rd), Up (Root, -4), Up-Right (5th, +3)
         major_mask = mask & self.scale_model.transpose_mask(-4) & self.scale_model.transpose_mask(3)
@@ -129,12 +129,12 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
                 (c + 1, r + 1), # (1, 1)
             ]
 
-            is_active_source = (self.scale_model.active_notes >> val) & 1
+            is_active_source = (self.scale_model.pitch_set >> val) & 1
 
             for nc, nr in neighbors:
                 if (nc, nr) in grid_points:
                     nx, ny, nval = grid_points[(nc, nr)]
-                    is_active_target = (self.scale_model.active_notes >> nval) & 1
+                    is_active_target = (self.scale_model.pitch_set >> nval) & 1
 
                     pen = QPen(active_pen if (is_active_source and is_active_target) else default_pen)
 
@@ -159,7 +159,7 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
         painter.setFont(QFont("Arial", font_size, QFont.Bold))
 
         for (c, r), (x, y, val) in grid_points.items():
-            is_active = (self.scale_model.active_notes >> val) & 1
+            is_active = (self.scale_model.pitch_set >> val) & 1
             is_root = (val == self.scale_model.root_note)
 
             active_pen = None

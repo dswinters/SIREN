@@ -1,4 +1,5 @@
 from PySide6.QtCore import QObject, Signal
+from modules.math import rotate, intervals
 
 class ScaleModel(QObject):
     updated = Signal()
@@ -27,10 +28,10 @@ class ScaleModel(QObject):
         self._update_representations()
 
     @property
-    def active_notes(self):
+    def pitch_set(self):
         # Return bit-rotated binary literal
         n = self._root_note
-        return ((self._value << n) | (self._value >> (12 - n))) & 0xFFF
+        return rotate(self._value, -n)
 
     @property
     def value(self):
@@ -42,7 +43,7 @@ class ScaleModel(QObject):
     def is_diatonic(self):
         mask = 2741
         for i in range(12):
-            rotated = ((mask >> i) | (mask << (12 - i))) & 0xFFF
+            rotated = rotate(mask, i)
             if self._value == rotated:
                 return True
         return False
@@ -93,7 +94,7 @@ class ScaleModel(QObject):
         # C Harmonic Minor: 101101011001, bit-reversed = 2477
         mask = 2477
         for i in range(12):
-            rotated = ((mask >> i) | (mask << (12 - i))) & 0xFFF
+            rotated = rotate(mask, i)
             if self._value == rotated:
                 return True, i
         return False, 0
@@ -101,7 +102,7 @@ class ScaleModel(QObject):
     def _compute_representation(self, use_sharps):
         # Get active notes (absolute)
         active_set = set()
-        mask = self.active_notes
+        mask = self.pitch_set
         for i in range(12):
             if (mask >> i) & 1:
                 active_set.add(i)
@@ -187,7 +188,7 @@ class ScaleModel(QObject):
             # Fallback to simple count
             s_names = self._get_sharp_names()
             f_names = self._get_flat_names()
-            mask = self.active_notes
+            mask = self.pitch_set
             s_count = 0
             f_count = 0
             for i in range(12):
@@ -245,20 +246,14 @@ class ScaleModel(QObject):
         self._update_representations()
         self.updated.emit()
 
-    def deactivate_all_notes(self):
-        self._value = 0
-        self._update_representations()
-        self.updated.emit()
     def rotate_modes(self, direction):
         if self._value == 0: return
         
         # Find next active bit in direction
-        shift = 0
-        for i in range(1, 13):
-            idx = (i * direction) % 12
-            if (self._value >> idx) & 1:
-                shift = idx
-                break
+        if direction == 1:
+            shift = intervals(self._value, 0)
+        else:
+            shift = -intervals(self._value, 0, direction='descending')
         
         # Update offset
         self._root_note = (self._root_note + shift) % 12
@@ -266,7 +261,7 @@ class ScaleModel(QObject):
         # Rotate value right by shift to preserve absolute notes (Mode Change)
         # Right rotate: (val >> s) | (val << (12-s))
         s = shift
-        self._value = ((self._value >> s) | (self._value << (12 - s))) & 0xFFF
+        self._value = rotate(self._value, s)
         
         self._update_representations()
         self.updated.emit()
@@ -278,9 +273,8 @@ class ScaleModel(QObject):
         self.updated.emit()
 
     def transpose_mask(self, semitones):
-        mask = self.active_notes
-        return ((mask >> (semitones % 12)) | (mask << (12 - (semitones % 12)))) & 0xFFF
-
+        mask = self.pitch_set
+        return rotate(mask, semitones)
 
     def set_root_note(self, offset):
         target = offset % 12
@@ -289,6 +283,6 @@ class ScaleModel(QObject):
         
         # Rotate value right by diff to preserve absolute notes
         s = diff
-        self._value = ((self._value >> s) | (self._value << (12 - s))) & 0xFFF
+        self._value = rotate(self._value, s)
         self._update_representations()
         self.updated.emit()

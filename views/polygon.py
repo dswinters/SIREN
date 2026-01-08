@@ -74,8 +74,8 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
                 idx_high = (idx_low + 1) % 12
                 ratio = note_pos - math.floor(note_pos)
                 
-                active_low = 1.0 if (self.scale_model.active_notes >> idx_low) & 1 else 0.0
-                active_high = 1.0 if (self.scale_model.active_notes >> idx_high) & 1 else 0.0
+                active_low = 1.0 if (self.scale_model.pitch_set >> idx_low) & 1 else 0.0
+                active_high = 1.0 if (self.scale_model.pitch_set >> idx_high) & 1 else 0.0
                 opacity = ((1.0 - ratio) * active_low + ratio * active_high) ** 2.0
                 
                 rgba = self.cmap(t)
@@ -108,7 +108,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
         active_points = []
         
         for i in range(12):
-            if (self.scale_model.active_notes >> i) & 1:
+            if (self.scale_model.pitch_set >> i) & 1:
                 angle_deg = -90 + (i - poly_offset) * 30
                 angle_rad = math.radians(angle_deg)
                 px = cx + radius * math.cos(angle_rad)
@@ -125,7 +125,7 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
         note_radius = 15
         for i in range(12):
             pos = note_positions[i]
-            is_active = (self.scale_model.active_notes >> i) & 1
+            is_active = (self.scale_model.pitch_set >> i) & 1
             is_root = (i == self.scale_model.root_note)
             
             active_pen = None

@@ -87,7 +87,7 @@ class PianoView(BaseNoteView):
         cx = key_rect.center().x()
         cy = key_rect.bottom() - radius - 8
 
-        is_active = (self.scale_model.active_notes >> note_val) & 1
+        is_active = (self.scale_model.pitch_set >> note_val) & 1
         is_root = (note_val == self.scale_model.root_note)
         active_pen = QPen(QColor("#929292"), 2)
 

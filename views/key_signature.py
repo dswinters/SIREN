@@ -34,7 +34,7 @@ class KeySignatureView(QWidget):
         
         # Collect accidentals from active notes
         accs = []
-        mask = self.scale_model.active_notes
+        mask = self.scale_model.pitch_set
         names = self.scale_model.note_names
         
         for i in range(12):
