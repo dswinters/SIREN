@@ -1,3 +1,4 @@
+import os
 from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy,
                                QPushButton, QLabel, QComboBox, QStackedWidget,
                                QCheckBox, QLineEdit)
@@ -386,9 +387,32 @@ class MainWindow(QMainWindow):
         if self.txt_bpm.hasFocus():
             super().keyPressEvent(event)
             return
+            
+        if event.key() == Qt.Key_F12:
+            self.capture_screenshots()
+            return
 
         if not handle_scale_key_event(event, self.scale_model, self.spelling, self.rotate_modes):
             super().keyPressEvent(event)
+
+    def capture_screenshots(self):
+        if not os.path.exists("screenshots"):
+            os.makedirs("screenshots")
+            
+        views = {
+            "main_window": self,
+            "fretboard": self.fret_view,
+            "piano": self.piano_view,
+            "scale_selector": self.scale_view,
+            "tonnetz": getattr(self, 'tonnetz_window', None),
+            "polygon": getattr(self, 'polygon_window', None)
+        }
+        
+        for name, widget in views.items():
+            if widget and widget.isVisible():
+                pixmap = widget.grab()
+                pixmap.save(f"screenshots/{name}.png")
+        print("Screenshots saved to ./screenshots/")
 
     def closeEvent(self, event):
         self.sound_engine.stop()
