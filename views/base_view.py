@@ -38,7 +38,7 @@ class BaseNoteView(QWidget):
         else:
             return QColor.fromRgbF(0.6, 0.6, 0.6, INACTIVE_OPACITY)
 
-    def draw_note_label(self, painter, center, radius, note_val, is_active, is_root, font_size=10, opacity=1.0, active_pen=None, offset_override=None):
+    def draw_note_label(self, painter, center, radius, note_val, is_active, is_root, font_size=10, opacity=1.0, active_pen=None, offset_override=None, inactive_text_opacity=None, inactive_text_color=None):
         bg_color = self.get_color_for_note(note_val, offset_override=offset_override)
         
         # Apply opacity to background
@@ -81,10 +81,13 @@ class BaseNoteView(QWidget):
             painter.drawEllipse(center, radius, radius)
 
         # Draw Text
-        text_color = QColor("black") if bg_color.lightness() > 128 else QColor("white")
+        if not is_active and inactive_text_color:
+            text_color = QColor(inactive_text_color)
+        else:
+            text_color = QColor("black") if bg_color.lightness() > 128 else QColor("white")
         text_opacity = opacity
         if not is_active:
-            text_opacity *= INACTIVE_OPACITY
+            text_opacity *= (inactive_text_opacity if inactive_text_opacity is not None else INACTIVE_OPACITY)
         
         text_color.setAlphaF(text_color.alphaF() * text_opacity)
         

@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY, ACTIVE_EDGE_COLOR, ACTIVE_EDGE_WIDTH
+from modules.math import rotate
 
 class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
     def __init__(self, scale_model):
@@ -107,12 +108,12 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
 
         # Major Triads (Color 5): Node (Root), Up-Right (M3, +4), Right (5th, +7)
         major_mask = mask & self.scale_model.transpose_mask(4) & self.scale_model.transpose_mask(7)
-        draw_triads(major_mask, [(0,0), (1,1), (0,1)], 5)
+        draw_triads(major_mask, [(0,0), (1,1), (1,0)], 5)
 
         # Minor Triads (Color 10): Node (m3), Up (Root, -3), Up-Right (5th, +4)
         minor_mask = mask & self.scale_model.transpose_mask(-3) & self.scale_model.transpose_mask(4)
-        # Neighbors: (0,0), (1,0), (1,1)
-        draw_triads(minor_mask, [(0,0), (1,0), (1,1)], 10)
+        # Neighbors: (0,0), (0,1), (1,1)
+        draw_triads(minor_mask, [(0,0), (0,1), (1,1)], 10)
 
         # Draw Edges
         # We draw "forward" edges to avoid duplicates and cover the requested neighbors:
@@ -168,7 +169,7 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
                 active_pen = QPen(pen_color, 3)
 
             self.draw_note_label(painter, QPointF(x, y), self.node_radius, val, is_active, is_root,
-                                 font_size=font_size, opacity=1.0, active_pen=active_pen)
+                                 font_size=font_size, opacity=1.0, active_pen=active_pen, inactive_text_opacity=0.7, inactive_text_color="white")
 
         self._grid_points = grid_points
 
@@ -232,3 +233,43 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
                 elif event.button() == Qt.RightButton:
                     self.scale_model.set_root_note(val)
                 return
+
+        # Check Triangles
+        if event.button() == Qt.LeftButton:
+            for (c, r), (x, y, val) in self._grid_points.items():
+                # T1: (c,r), (c+1,r), (c+1,r+1)
+                n1 = (c+1, r)
+                n2 = (c+1, r+1)
+                if n1 in self._grid_points and n2 in self._grid_points:
+                    p0 = QPointF(x, y)
+                    p1 = QPointF(*self._grid_points[n1][:2])
+                    p2 = QPointF(*self._grid_points[n2][:2])
+                    if QPolygonF([p0, p1, p2]).containsPoint(pos, Qt.OddEvenFill):
+                        self._handle_triangle_click([val, self._grid_points[n1][2], self._grid_points[n2][2]])
+                        return
+
+                # T2: (c,r), (c+1,r+1), (c,r+1)
+                n3 = (c+1, r+1)
+                n4 = (c, r+1)
+                if n3 in self._grid_points and n4 in self._grid_points:
+                    p0 = QPointF(x, y)
+                    p3 = QPointF(*self._grid_points[n3][:2])
+                    p4 = QPointF(*self._grid_points[n4][:2])
+                    if QPolygonF([p0, p3, p4]).containsPoint(pos, Qt.OddEvenFill):
+                        self._handle_triangle_click([val, self._grid_points[n3][2], self._grid_points[n4][2]])
+                        return
+
+    def _handle_triangle_click(self, vals):
+        mask = self.scale_model.pitch_set
+        all_active = all((mask >> v) & 1 for v in vals)
+        
+        new_mask = mask
+        if all_active:
+            for v in vals:
+                new_mask &= ~(1 << v)
+        else:
+            for v in vals:
+                new_mask |= (1 << v)
+        
+        new_value = rotate(new_mask, self.scale_model.root_note)
+        self.scale_model.set_value(new_value)
