@@ -22,7 +22,7 @@ ACTIVE_EDGE_WIDTH = 4
 def get_cmap(name):
     return getattr(cm, name)
 
-def handle_scale_key_event(event, scale_model, rotate_callback=None):
+def handle_scale_key_event(event, scale_model, spelling, rotate_callback=None):
     """
     Shared key event handler for scale interactions.
     Returns True if the event was handled, False otherwise.
@@ -53,6 +53,9 @@ def handle_scale_key_event(event, scale_model, rotate_callback=None):
         return True
     elif key == Qt.Key_0:
         scale_model.set_value(0)
+        return True
+    elif key == Qt.Key_Space:
+        spelling.toggle_enharmonic_spelling()
         return True
     else:
         mapping = {

@@ -7,8 +7,8 @@ from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY, ACTIVE_EDGE_COLOR, ACTIVE_EDGE_WIDTH
 
 class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
-    def __init__(self, scale_model):
-        super().__init__(scale_model)
+    def __init__(self, scale_model, spelling):
+        super().__init__(scale_model, spelling)
         self.setWindowTitle("Polygon View")
         self.resize(400, 400)
         self.setStyleSheet("background-color: #121212;")

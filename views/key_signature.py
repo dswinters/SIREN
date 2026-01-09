@@ -3,10 +3,12 @@ from PySide6.QtGui import QPainter, QPen, QColor, QFont
 from PySide6.QtCore import Qt, QRectF
 
 class KeySignatureView(QWidget):
-    def __init__(self, scale_model):
+    def __init__(self, scale_model, spelling):
         super().__init__()
         self.scale_model = scale_model
+        self.spelling = spelling
         self.scale_model.updated.connect(self.update)
+        self.spelling.updated.connect(self.update)
         self.setFixedWidth(160)
         self.setFixedHeight(90)
         self.setStyleSheet("background-color: #121212;")
@@ -35,7 +37,7 @@ class KeySignatureView(QWidget):
         # Collect accidentals from active notes
         accs = []
         mask = self.scale_model.pitch_set
-        names = self.scale_model.note_names
+        names = self.spelling.note_names
         
         for i in range(12):
             if (mask >> i) & 1:
@@ -47,7 +49,7 @@ class KeySignatureView(QWidget):
                         accs.append((letter, symbol))
 
         # Sort based on accidental mode
-        mode = self.scale_model._accidental_mode
+        mode = self.spelling.enharmonic_mode
         if mode == 'flat':
             # Circle of Fifths order for flats: B E A D G C F
             order = "BEADGCF"

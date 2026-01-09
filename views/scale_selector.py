@@ -7,8 +7,8 @@ from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY
 
 class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
-    def __init__(self, scale_model):
-        super().__init__(scale_model)
+    def __init__(self, scale_model, spelling):
+        super().__init__(scale_model, spelling)
         
         self.setFixedHeight(60)
         self.setStyleSheet("background-color: #121212;")
@@ -96,7 +96,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
         elif event.button() == Qt.RightButton:
             if not self.is_animating():
                 if clicked_val == self.scale_model.root_note:
-                    self.scale_model.toggle_naming_convention()
+                    self.spelling.toggle_enharmonic_spelling()
                 else:
                     self.scale_model.set_root_note(clicked_val)
 

@@ -8,9 +8,10 @@ from .common import INACTIVE_OPACITY, ACTIVE_EDGE_COLOR, ACTIVE_EDGE_WIDTH
 from modules.math import rotate
 
 class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
-    def __init__(self, scale_model):
-        super().__init__(scale_model)
+    def __init__(self, scale_model, spelling):
+        super().__init__(scale_model, spelling)
         self.scale_model.updated.connect(self.update)
+        self.spelling.updated.connect(self.update)
         self.setWindowTitle("Tonnetz Grid")
         self.resize(800, 600)
         self.setStyleSheet("background-color: #121212;")

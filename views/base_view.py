@@ -4,9 +4,10 @@ from PySide6.QtCore import Qt, QRectF
 from .common import CYCLIC_MAPS, INACTIVE_OPACITY, get_cmap, handle_scale_key_event
 
 class BaseNoteView(QWidget):
-    def __init__(self, scale_model):
+    def __init__(self, scale_model, spelling):
         super().__init__()
         self.scale_model = scale_model
+        self.spelling = spelling
         self.setFocusPolicy(Qt.ClickFocus)
         # Base class does NOT connect update automatically to avoid double paints in animated views
         
@@ -97,7 +98,7 @@ class BaseNoteView(QWidget):
         painter.setPen(text_color)
         painter.setFont(QFont("Arial", font_size, QFont.Bold))
         rect = QRectF(center.x() - radius, center.y() - radius, radius*2, radius*2)
-        painter.drawText(rect, Qt.AlignCenter, self.scale_model.note_names[note_val])
+        painter.drawText(rect, Qt.AlignCenter, self.spelling.note_names[note_val])
 
     def keyPressEvent(self, event):
         def rotate_cb(direction):
@@ -105,5 +106,5 @@ class BaseNoteView(QWidget):
                 return
             self.scale_model.rotate_modes(direction)
 
-        if not handle_scale_key_event(event, self.scale_model, rotate_cb):
+        if not handle_scale_key_event(event, self.scale_model, self.spelling, rotate_cb):
             super().keyPressEvent(event)

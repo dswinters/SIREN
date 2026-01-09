@@ -10,11 +10,12 @@ class FingerboardView(BaseNoteView):
     MARGIN_TOP = 30
     MARGIN_BOTTOM = 50
 
-    def __init__(self, instrument_model, scale_model):
-        super().__init__(scale_model)
+    def __init__(self, instrument_model, scale_model, spelling):
+        super().__init__(scale_model, spelling)
         self.instrument_model = instrument_model
         self.instrument_model.updated.connect(self.update)
         self.scale_model.updated.connect(self.update)
+        self.spelling.updated.connect(self.update)
         self.setStyleSheet("background-color: #121212;")
         self.setMinimumHeight(300)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -101,7 +102,7 @@ class FingerboardView(BaseNoteView):
     def show_tuning_menu(self, string_idx, global_pos):
         menu = QMenu(self)
         menu.setStyleSheet("QMenu { background-color: #333; color: white; }")
-        for i, name in enumerate(self.scale_model.note_names):
+        for i, name in enumerate(self.spelling.note_names):
             action = QAction(name, self)
             action.triggered.connect(lambda c, v=i: self.instrument_model.set_string_note(string_idx, v))
             menu.addAction(action)

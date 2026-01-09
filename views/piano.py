@@ -5,10 +5,11 @@ from .base_view import BaseNoteView
 from .common import FONT_SIZE, INACTIVE_OPACITY
 
 class PianoView(BaseNoteView):
-    def __init__(self, scale_model, octaves=3):
-        super().__init__(scale_model)
+    def __init__(self, scale_model, spelling, octaves=3):
+        super().__init__(scale_model, spelling)
         self.octaves = octaves
         self.scale_model.updated.connect(self.update)
+        self.spelling.updated.connect(self.update)
         self.setStyleSheet("background-color: #121212;")
         self.setMinimumHeight(300)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)

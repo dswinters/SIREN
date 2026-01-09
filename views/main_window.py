@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QIntValidator
 from models import InstrumentModel, ScaleModel
 from modules.sound import SoundEngine
+from modules.spelling import Spelling
 from modules.math import interval_count, num2str
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from controls.scale_dropdown import ScaleSelectDropdown
@@ -34,15 +35,16 @@ class MainWindow(QMainWindow):
     def _init_models(self):
         self.instrument_model = InstrumentModel()
         self.scale_model = ScaleModel()
+        self.spelling = Spelling(self.scale_model)
         self.sound_engine = SoundEngine()
 
     def _init_ui(self):
         # Views
-        self.fret_view = FretboardView(self.instrument_model, self.scale_model)
-        self.fretless_view = FretlessView(self.instrument_model, self.scale_model)
-        self.piano_view = PianoView(self.scale_model)
-        self.scale_view = ScaleSelectorView(self.scale_model)
-        self.key_signature_view = KeySignatureView(self.scale_model)
+        self.fret_view = FretboardView(self.instrument_model, self.scale_model, self.spelling)
+        self.fretless_view = FretlessView(self.instrument_model, self.scale_model, self.spelling)
+        self.piano_view = PianoView(self.scale_model, self.spelling)
+        self.scale_view = ScaleSelectorView(self.scale_model, self.spelling)
+        self.key_signature_view = KeySignatureView(self.scale_model, self.spelling)
         
         self.lbl_scale_name = QLabel("")
         self.lbl_scale_name.setAlignment(Qt.AlignCenter)
@@ -241,6 +243,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self):
         self.sound_engine.playback_stopped.connect(self.on_playback_stopped)
         self.scale_model.updated.connect(self.on_scale_updated)
+        self.spelling.updated.connect(self.on_scale_updated)
         self.sound_engine.note_played.connect(self.scale_view.highlight_note)
         
         self.btn_toggle_view.clicked.connect(self.toggle_instrument_view)
@@ -289,7 +292,7 @@ class MainWindow(QMainWindow):
         self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
         
         # Update scale name label
-        root_name = self.scale_model.note_names[self.scale_model.root_note]
+        root_name = self.spelling.note_names[self.scale_model.root_note]
         current_val = self.scale_model.value
         scale_name = None
         
@@ -322,7 +325,7 @@ class MainWindow(QMainWindow):
 
     def open_polygon_view(self):
         if not hasattr(self, 'polygon_window') or not self.polygon_window.isVisible():
-            self.polygon_window = PolygonView(self.scale_model)
+            self.polygon_window = PolygonView(self.scale_model, self.spelling)
             self.polygon_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
             self.polygon_window.set_scale_name(self.lbl_scale_name.text())
             self.sound_engine.note_played.connect(self.polygon_window.highlight_note)
@@ -333,7 +336,7 @@ class MainWindow(QMainWindow):
 
     def open_tonnetz_view(self):
         if not hasattr(self, 'tonnetz_window') or not self.tonnetz_window.isVisible():
-            self.tonnetz_window = TonnetzView(self.scale_model)
+            self.tonnetz_window = TonnetzView(self.scale_model, self.spelling)
             self.tonnetz_window.set_colormap(self.colormap_selector.itemData(self.colormap_selector.currentIndex()))
             self.sound_engine.note_played.connect(self.tonnetz_window.highlight_note)
             self.tonnetz_window.show()
@@ -384,7 +387,7 @@ class MainWindow(QMainWindow):
             super().keyPressEvent(event)
             return
 
-        if not handle_scale_key_event(event, self.scale_model, self.rotate_modes):
+        if not handle_scale_key_event(event, self.scale_model, self.spelling, self.rotate_modes):
             super().keyPressEvent(event)
 
     def closeEvent(self, event):
