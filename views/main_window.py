@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QIntValidator
 from models import InstrumentModel, ScaleModel
 from modules.sound import SoundEngine
+from modules.math import interval_count, num2str
 from controls import PresetSelector, OffsetController, ColormapDropdown
 from controls.scale_dropdown import ScaleSelectDropdown
 from .fretboard import FretboardView, FretlessView
@@ -45,6 +46,11 @@ class MainWindow(QMainWindow):
         self.lbl_scale_name = QLabel("")
         self.lbl_scale_name.setAlignment(Qt.AlignCenter)
         self.lbl_scale_name.setStyleSheet("font-size: 14px; font-weight: bold; color: #CCCCCC; padding: 5px;")
+        
+        self.lbl_scale_info = QLabel("")
+        self.lbl_scale_info.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.lbl_scale_info.setStyleSheet("font-family: monospace; font-size: 12px; color: #888888; padding: 5px;")
+        self.lbl_scale_info.setFixedWidth(140)
 
         # --- CONTROLS ---
 
@@ -204,7 +210,19 @@ class MainWindow(QMainWindow):
         scale_col_layout.setContentsMargins(0, 0, 0, 0)
         scale_col_layout.setSpacing(0)
         scale_col_layout.addWidget(self.scale_view)
-        scale_col_layout.addWidget(self.lbl_scale_name)
+        
+        labels_widget = QWidget()
+        labels_layout = QHBoxLayout(labels_widget)
+        labels_layout.setContentsMargins(5, 0, 5, 0)
+        left_spacer = QWidget()
+        left_spacer.setFixedWidth(140)
+        labels_layout.addWidget(left_spacer)
+        labels_layout.addStretch()
+        labels_layout.addWidget(self.lbl_scale_name)
+        labels_layout.addStretch()
+        labels_layout.addWidget(self.lbl_scale_info)
+        
+        scale_col_layout.addWidget(labels_widget)
 
         bottom_layout.addWidget(scale_col_widget)
         right_layout.addWidget(bottom_widget)
@@ -280,14 +298,18 @@ class MainWindow(QMainWindow):
                 scale_name = self.scale_dropdown.itemText(i).strip()
                 break
         
-        full_text = ""
+        vec_int = interval_count(current_val)
+        vec_str = num2str(vec_int, 12).zfill(6)
+        self.lbl_scale_info.setText(f"({current_val:4d}, {vec_str})")
+        
         if scale_name:
-            full_text = f"{root_name} {scale_name}"
-            self.lbl_scale_name.setText(full_text)
+            self.lbl_scale_name.setText(f"{root_name} {scale_name}")
         else:
-            self.lbl_scale_name.setText("")
+            self.lbl_scale_name.setText(f"{root_name}")
             
         if hasattr(self, 'polygon_window') and self.polygon_window.isVisible():
+            extra_info = f"({current_val},{vec_str})"
+            full_text = f"{root_name} {scale_name} {extra_info}" if scale_name else f"{root_name} {extra_info}"
             self.polygon_window.set_scale_name(full_text)
 
     def rotate_modes(self, direction):

@@ -44,3 +44,26 @@ def intervals(scale, n=None, direction='ascending'):
         res.append(indices[i+1] - indices[i])
     res.append(12 + indices[0] - indices[-1])
     return res
+
+def interval_count(val):
+    """
+    Creates a 6-digit number in base 12, where digit n is equal to the number 
+    of 1-bits in the bitwise AND of a scale value and itself shifted by n.
+    """
+    res = 0
+    for i in range(1, 7):
+        shifted = rotate(val, i)
+        count = cardinality(val & shifted)
+        res = (res * 12) + count
+    return res
+
+def num2str(val, base):
+    """Converts an integer to a string of digits in the given base."""
+    if val == 0:
+        return "0"
+    digits = "0123456789abcdefghijklmnopqrstuvwxyz"
+    res = []
+    while val:
+        res.append(digits[val % base])
+        val //= base
+    return "".join(res[::-1])

@@ -70,8 +70,8 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
         for r in range(-1, core_rows + 1):
             for c in range(-1, core_cols + 1):
                 x, y = to_screen(c, r)
-                # Value calculation: +7 per column (c), +8 per row (r)
-                val = (self.scale_model.root_note + c * 7 + r * 8 + 6) % 12
+                # Value calculation: +7 per column (c), +9 per row (r)
+                val = (self.scale_model.root_note + c * 7 + r * 9 + 6) % 12
 
                 grid_points[(c, r)] = (x, y, val)
 
@@ -105,13 +105,12 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
 
         mask = self.scale_model.pitch_set
 
-        # Major Triads (Color 6): Node (3rd), Up (Root, -4), Up-Right (5th, +3)
-        major_mask = mask & self.scale_model.transpose_mask(-4) & self.scale_model.transpose_mask(3)
-        # Neighbors: (0,0), (0,1), (1,1)
-        draw_triads(major_mask, [(0,0), (0,1), (1,1)], 5)
+        # Major Triads (Color 5): Node (Root), Up-Right (M3, +4), Right (5th, +7)
+        major_mask = mask & self.scale_model.transpose_mask(4) & self.scale_model.transpose_mask(7)
+        draw_triads(major_mask, [(0,0), (1,1), (0,1)], 5)
 
-        # Minor Triads (Color 10): Node (Root), Right (5th, +7), Up-Right (3rd, +3)
-        minor_mask = mask & self.scale_model.transpose_mask(3) & self.scale_model.transpose_mask(7)
+        # Minor Triads (Color 10): Node (m3), Up (Root, -3), Up-Right (5th, +4)
+        minor_mask = mask & self.scale_model.transpose_mask(-3) & self.scale_model.transpose_mask(4)
         # Neighbors: (0,0), (1,0), (1,1)
         draw_triads(minor_mask, [(0,0), (1,0), (1,1)], 10)
 
