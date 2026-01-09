@@ -72,7 +72,7 @@ class TonnetzView(BaseNoteView, PlaybackHighlightMixin):
             for c in range(-1, core_cols + 1):
                 x, y = to_screen(c, r)
                 # Value calculation: +7 per column (c), +9 per row (r)
-                val = (self.scale_model.root_note + c * 7 + r * 9 + 6) % 12
+                val = (self.scale_model.root_note + c * 7 + r * 9 + 4) % 12
 
                 grid_points[(c, r)] = (x, y, val)
 

@@ -13,7 +13,7 @@ from .scale_selector import ScaleSelectorView
 from .piano import PianoView
 from .polygon import PolygonView
 from .tonnetz import TonnetzView
-from .common import NOTE_NAMES
+from .common import NOTE_NAMES, handle_scale_key_event
 from .key_signature import KeySignatureView
 
 class MainWindow(QMainWindow):
@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         
         # Initialize label
         self.on_scale_updated()
+        self.setFocus()
 
     def _init_models(self):
         self.instrument_model = InstrumentModel()
@@ -317,8 +318,6 @@ class MainWindow(QMainWindow):
             return
         if hasattr(self, 'polygon_window') and self.polygon_window.isVisible() and self.polygon_window.is_animating():
             return
-        if hasattr(self, 'tonnetz_window') and self.tonnetz_window.isVisible() and self.tonnetz_window.is_animating():
-            return
         self.scale_model.rotate_modes(direction)
 
     def open_polygon_view(self):
@@ -379,6 +378,14 @@ class MainWindow(QMainWindow):
         self.cmb_transpose_root.blockSignals(True)
         self.cmb_transpose_root.setCurrentIndex(0)
         self.cmb_transpose_root.blockSignals(False)
+
+    def keyPressEvent(self, event):
+        if self.txt_bpm.hasFocus():
+            super().keyPressEvent(event)
+            return
+
+        if not handle_scale_key_event(event, self.scale_model, self.rotate_modes):
+            super().keyPressEvent(event)
 
     def closeEvent(self, event):
         self.sound_engine.stop()

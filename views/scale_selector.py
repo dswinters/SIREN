@@ -63,7 +63,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
             
             active_pen = None
             if is_active:
-                base_pen = QColor("#929292")
+                base_pen = QColor("white") if is_root else QColor("#929292")
                 pen_color = self.get_interpolated_color(note_val, base_pen, QColor("#409C40"))
                 active_pen = QPen(pen_color, 4)
 

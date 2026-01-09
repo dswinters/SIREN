@@ -76,7 +76,8 @@ class FingerboardView(BaseNoteView):
 
                 is_active = (self.scale_model.pitch_set >> note_val) & 1
                 is_root = (note_val == self.scale_model.root_note)
-                active_pen = QPen(QColor("#929292"), 2)
+                pen_color = QColor("white") if is_root else QColor("#929292")
+                active_pen = QPen(pen_color, 2)
                 
                 self.draw_note_label(painter, QPointF(text_x, y), radius, note_val, is_active, is_root, 
                                      font_size=FONT_SIZE, active_pen=active_pen)
