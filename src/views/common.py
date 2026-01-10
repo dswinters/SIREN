@@ -52,7 +52,7 @@ def handle_scale_key_event(event, scale_model, spelling, rotate_callback=None):
         scale_model.transpose(-7)
         return True
     elif key == Qt.Key_0:
-        scale_model.set_value(0)
+        scale_model.set_shape(0)
         return True
     elif key == Qt.Key_Space:
         spelling.toggle_enharmonic_spelling()

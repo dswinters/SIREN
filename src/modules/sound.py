@@ -24,7 +24,7 @@ class SoundEngine(QObject):
         self._instrument = "Guitar"
         self._sample_rate = 44100
         self._root_note = 0
-        self._value = 0
+        self._shape = 0
         self._octave_shift = 0
 
     @property
@@ -51,9 +51,9 @@ class SoundEngine(QObject):
     def change_octave(self, delta: int):
         self._octave_shift += delta
 
-    def update_scale(self, root_note: int, value: int):
+    def update_scale(self, root_note: int, shape: int):
         self._root_note = root_note
-        self._value = value
+        self._shape = shape
 
     def play(self):
         self.stop()
@@ -163,7 +163,7 @@ class SoundEngine(QObject):
             base_note = 60 + self._root_note
             sequence = []
             for i in range(12):
-                if (self._value >> i) & 1:
+                if (self._shape >> i) & 1:
                     sequence.append(base_note + i)
             
             if not sequence:

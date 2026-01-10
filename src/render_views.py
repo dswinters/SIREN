@@ -26,10 +26,10 @@ def main():
 
     if len(sys.argv) > 1:
         try:
-            scale_number = int(sys.argv[1])
-            print(f"Setting scale value to: {scale_number}")
-            scale_model.set_value(scale_number)
-            main_window.scale_model.set_value(scale_number)
+            scale_shape = int(sys.argv[1])
+            print(f"Setting scale shape to: {scale_shape}")
+            scale_model.set_shape(scale_shape)
+            main_window.scale_model.set_shape(scale_shape)
         except ValueError:
             print(f"Ignoring invalid argument: {sys.argv[1]}")
 

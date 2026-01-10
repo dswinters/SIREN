@@ -58,7 +58,7 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
             
             radius = min(cell_w, h) / 2 - 4
             
-            is_active = (self.scale_model.pitch_set >> note_val) & 1
+            is_active = (self.scale_model.number >> note_val) & 1
             is_root = (note_val == self.scale_model.root_note)
             
             active_pen = None

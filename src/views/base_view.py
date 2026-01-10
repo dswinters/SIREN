@@ -27,7 +27,7 @@ class BaseNoteView(QWidget):
     def get_color_for_note(self, note_val, offset_override=None):
         if not self.cmap: return QColor("#333333")
         
-        is_active = (self.scale_model.pitch_set >> note_val) & 1
+        is_active = (self.scale_model.number >> note_val) & 1
         if is_active:
             # Use override if provided (for smooth color transitions during animation)
             # otherwise use model state

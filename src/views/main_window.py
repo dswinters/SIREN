@@ -281,7 +281,7 @@ class MainWindow(QMainWindow):
             self.sound_engine.stop()
             self.btn_play.setText("Play")
         else:
-            self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
+            self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.shape)
             self.sound_engine.play()
             self.btn_play.setText("Stop")
 
@@ -290,22 +290,22 @@ class MainWindow(QMainWindow):
         self.btn_play.setText("Play")
 
     def on_scale_updated(self):
-        self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.value)
+        self.sound_engine.update_scale(self.scale_model.root_note, self.scale_model.shape)
         
         # Update scale name label
         root_name = self.spelling.note_names[self.scale_model.root_note]
-        current_val = self.scale_model.value
+        current_shape = self.scale_model.shape
         scale_name = None
         
         for i in range(self.scale_dropdown.count()):
             val = self.scale_dropdown.itemData(i)
-            if val is not None and int(val) == current_val:
+            if val is not None and int(val) == current_shape:
                 scale_name = self.scale_dropdown.itemText(i).strip()
                 break
         
-        vec_int = interval_count(current_val)
+        vec_int = interval_count(current_shape)
         vec_str = num2str(vec_int, 12).zfill(6)
-        self.lbl_scale_info.setText(f"({current_val:4d}, {vec_str})")
+        self.lbl_scale_info.setText(f"({current_shape:4d}, {vec_str})")
         
         if scale_name:
             self.lbl_scale_name.setText(f"{root_name} {scale_name}")
@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
             self.lbl_scale_name.setText(f"{root_name}")
             
         if hasattr(self, 'polygon_window') and self.polygon_window.isVisible():
-            extra_info = f"({current_val},{vec_str})"
+            extra_info = f"({current_shape},{vec_str})"
             full_text = f"{root_name} {scale_name} {extra_info}" if scale_name else f"{root_name} {extra_info}"
             self.polygon_window.set_scale_name(full_text)
 

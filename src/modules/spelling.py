@@ -91,16 +91,16 @@ class Spelling(QObject):
 
     def _is_harmonic(self):
         mask = 2477
-        val = self._scale_model.value
+        shape = self._scale_model.shape
         for i in range(12):
             rotated = rotate(mask, i)
-            if val == rotated:
+            if shape == rotated:
                 return True, i
         return False, 0
 
     def _compute_spelling(self, use_sharps):
         active_set = set()
-        mask = self._scale_model.pitch_set
+        mask = self._scale_model.number
         root = self._scale_model.root_note
         for i in range(12):
             if (mask >> i) & 1:
