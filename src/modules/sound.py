@@ -3,6 +3,7 @@ import threading
 import numpy as np
 from PySide6.QtCore import QObject, Signal
 from typing import List, Optional
+from .math import pitch_set
 
 try:
     import sounddevice as sd
@@ -161,10 +162,7 @@ class SoundEngine(QObject):
         while not self._stop_event.is_set():
             # Construct sequence dynamically based on current state
             base_note = 60 + self._root_note
-            sequence = []
-            for i in range(12):
-                if (self._shape >> i) & 1:
-                    sequence.append(base_note + i)
+            sequence = [base_note + i for i in pitch_set(self._shape)]
             
             if not sequence:
                 self.playback_stopped.emit()

@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QPainter, QPen, QColor, QFont
 from PySide6.QtCore import Qt, QRectF
+from modules.math import pitch_set
 
 class KeySignatureView(QWidget):
     def __init__(self, scale_model, spelling):
@@ -36,17 +37,15 @@ class KeySignatureView(QWidget):
         
         # Collect accidentals from active notes
         accs = []
-        mask = self.scale_model.number
         names = self.spelling.note_names
         
-        for i in range(12):
-            if (mask >> i) & 1:
-                n = names[i]
-                if len(n) > 1:
-                    letter = n[0]
-                    symbol = n[1]
-                    if symbol in ['♯', '♭', '𝄪', '♮']:
-                        accs.append((letter, symbol))
+        for i in pitch_set(self.scale_model.number):
+            n = names[i]
+            if len(n) > 1:
+                letter = n[0]
+                symbol = n[1]
+                if symbol in ['♯', '♭', '𝄪', '♮']:
+                    accs.append((letter, symbol))
 
         # Sort based on accidental mode
         mode = self.spelling.enharmonic_mode

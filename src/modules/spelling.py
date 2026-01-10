@@ -1,5 +1,5 @@
 from PySide6.QtCore import QObject, Signal
-from .math import rotate
+from .math import rotate, pitch_set
 
 class Spelling(QObject):
     updated = Signal()
@@ -99,12 +99,8 @@ class Spelling(QObject):
         return False, 0
 
     def _compute_spelling(self, use_sharps):
-        active_set = set()
-        mask = self._scale_model.number
+        active_set = set(pitch_set(self._scale_model.number))
         root = self._scale_model.root_note
-        for i in range(12):
-            if (mask >> i) & 1:
-                active_set.add(i)
 
         is_harm, offset = self._is_harmonic()
         if is_harm:

@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY, ACTIVE_EDGE_COLOR, ACTIVE_EDGE_WIDTH
+from modules.math import pitch_set
 
 class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
     def __init__(self, scale_model, spelling):
@@ -107,13 +108,12 @@ class PolygonView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
         poly_offset = self.scale_model.root_note if self._static_polygon else self._anim_offset
         active_points = []
         
-        for i in range(12):
-            if (self.scale_model.number >> i) & 1:
-                angle_deg = -90 + (i - poly_offset) * 30
-                angle_rad = math.radians(angle_deg)
-                px = cx + radius * math.cos(angle_rad)
-                py = cy + radius * math.sin(angle_rad)
-                active_points.append(QPointF(px, py))
+        for i in pitch_set(self.scale_model.number):
+            angle_deg = -90 + (i - poly_offset) * 30
+            angle_rad = math.radians(angle_deg)
+            px = cx + radius * math.cos(angle_rad)
+            py = cy + radius * math.sin(angle_rad)
+            active_points.append(QPointF(px, py))
 
         # Draw polygon connecting active notes
         if len(active_points) > 1:
