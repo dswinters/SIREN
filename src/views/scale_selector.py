@@ -5,12 +5,14 @@ from PySide6.QtCore import Qt, QPointF, QRectF
 from .base_view import BaseNoteView
 from .mixins import RotationAnimationMixin, PlaybackHighlightMixin
 from .common import INACTIVE_OPACITY
+from modules.chords import compute_chords, TRIADS
+from modules.math import pitch_set
 
 class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightMixin):
     def __init__(self, scale_model, spelling):
         super().__init__(scale_model, spelling)
         
-        self.setFixedHeight(60)
+        self.setFixedHeight(100)
         self.setStyleSheet("background-color: #121212;")
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
@@ -30,6 +32,23 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
         
         painter.setFont(QFont("Arial", 10, QFont.Bold))
 
+        # Precompute chords for the current scale
+        chord_map = {}
+        scale_num = self.scale_model.number
+        root_note = self.scale_model.root_note
+        
+        active_notes = pitch_set(scale_num)
+        chords_per_degree = compute_chords(scale_num)
+        
+        for note_val, shapes in zip(active_notes, chords_per_degree):
+            names = []
+            interval = (note_val - root_note) % 12
+            for shape in shapes:
+                if shape in TRIADS:
+                    names.append(TRIADS[shape](interval))
+            if names:
+                chord_map[note_val] = names
+
         # We want to render cells based on the animated offset.
         # If offset increases (e.g. 0 -> 1), the "start" index moves up.
         # This effectively shifts notes to the Left.
@@ -41,6 +60,9 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
         start_k = int(np.floor(self._anim_offset)) - 1
         end_k = int(np.ceil(self._anim_offset + 12)) + 1
 
+        text_space = 40
+        avail_h = h - text_space
+
         for k in range(start_k, end_k):
             # Calculate Screen X
             # Position 0 is at (0 - offset) * width
@@ -51,12 +73,12 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
                 continue
 
             cx = margin + (pos_index * cell_w) + (cell_w / 2)
-            cy = h / 2
+            cy = avail_h / 2
             
             # Determine Note
             note_val = k % 12
             
-            radius = min(cell_w, h) / 2 - 4
+            radius = min(cell_w, avail_h) / 2 - 4
             
             is_active = (self.scale_model.number >> note_val) & 1
             is_root = (note_val == self.scale_model.root_note)
@@ -69,6 +91,16 @@ class ScaleSelectorView(BaseNoteView, RotationAnimationMixin, PlaybackHighlightM
 
             self.draw_note_label(painter, QPointF(cx, cy), radius, note_val, is_active, is_root, 
                                  font_size=10, active_pen=active_pen, offset_override=self._anim_offset)
+
+            # Draw chord labels
+            if is_active and note_val in chord_map:
+                labels = chord_map[note_val]
+                label_y = cy + radius + 15
+                painter.setFont(QFont("Arial", 9))
+                painter.setPen(QColor("#CCCCCC"))
+                for label in labels:
+                    painter.drawText(QRectF(cx - 30, label_y, 60, 12), Qt.AlignCenter, label)
+                    label_y += 12
 
     def mousePressEvent(self, event):
         w = self.width()
